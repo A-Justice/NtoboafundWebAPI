@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.489
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NtoboaFund", "NtoboaFund\NtoboaFund.csproj", "{A843AA4E-81A0-4F69-9F24-CC984777AD4E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NtoboaFund", "NtoboaFund\NtoboaFund.csproj", "{A843AA4E-81A0-4F69-9F24-CC984777AD4E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
