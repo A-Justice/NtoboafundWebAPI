@@ -1,13 +1,10 @@
 ﻿using hubtelapi_dotnet_v1.Hubtel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using NtoboaFund.Data.DBContext;
 using NtoboaFund.Data.DTO_s;
 using NtoboaFund.Data.Models;
 using NtoboaFund.Services;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace NtoboaFund.Controllers
@@ -21,6 +18,12 @@ namespace NtoboaFund.Controllers
         public UsersController(IUserService userService)
         {
             _userService = userService;
+        }
+
+        [HttpGet("getuser/{Id}")]
+        public IActionResult GetUser(string Id)
+        {
+            return Ok(_userService.GetUser(Id));
         }
 
         [AllowAnonymous]
@@ -39,18 +42,18 @@ namespace NtoboaFund.Controllers
         [HttpPost("register")]
         public IActionResult Register([FromForm]RegistrationDTO regDTO)
         {
-            Tuple<ApplicationUser,string> result = null;
+            Tuple<ApplicationUser, string> result = null;
             if (ModelState.IsValid)
             {
                 result = _userService.Register(regDTO);
-                
+
             }
             else
             {
                 return BadRequest("Form Contains Invalid Fields");
             }
-            
-            if(result.Item2 == null)
+
+            if (result.Item2 == null)
                 return Ok(result.Item1);
 
             return BadRequest(result.Item2);
@@ -63,7 +66,7 @@ namespace NtoboaFund.Controllers
             ApplicationUser result = null;
             if (ModelState.IsValid)
             {
-                 result  = _userService.EditUser(regDTO);
+                result = _userService.EditUser(regDTO);
                 if (result != null)
                 {
                     return Ok(result);
@@ -85,7 +88,8 @@ namespace NtoboaFund.Controllers
 
         [AllowAnonymous]
         [HttpGet("getimage/{email}")]
-        public IActionResult GetImage(string email){
+        public IActionResult GetImage(string email)
+        {
             try
             {
                 var imageFileStream = System.IO.File.OpenRead(_userService.GetImagePath(email));
@@ -95,7 +99,7 @@ namespace NtoboaFund.Controllers
             {
                 return NotFound();
             }
-            
+
         }
 
     }

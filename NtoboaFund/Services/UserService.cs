@@ -1,5 +1,6 @@
-﻿using hubtelapi_dotnet_v1.Hubtel;
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NtoboaFund.Data.DBContext;
@@ -11,116 +12,141 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
+using System.Net.Mail;
 using System.Security.Claims;
 using System.Text;
-using System.Net;
-using System.Net.Mail;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 
 namespace NtoboaFund.Services
 {
     public interface IUserService
     {
         ApplicationUser Authenticate(string username, string password);
-        Tuple<ApplicationUser,string> Register(RegistrationDTO user);
+        Tuple<ApplicationUser, string> Register(RegistrationDTO user);
 
         ApplicationUser EditUser(UserEditDTO user);
 
         IEnumerable<ApplicationUser> GetAll();
 
-        
+
 
         string GetImagePath(string userEmail);
+
+        ApplicationUser GetUser(string Id);
     }
 
-    public class UserService:IUserService
+    public class UserService : IUserService
     {
         // users hardcoded for simplicity, store in a db with hashed passwords in production applications
         private List<ApplicationUser> _users = new List<ApplicationUser>
         {
-          //  new ApplicationUser { Id = 1, FirstName = "Test", LastName = "ApplicationUser", Username = "test", Password = "test" }
+            //  new ApplicationUser { Id = 1, FirstName = "Test", LastName = "ApplicationUser", Username = "test", Password = "test" }
         };
 
         private readonly AppSettings _appSettings;
         private NtoboaFundDbContext context;
         public static IHostingEnvironment _environment;
 
-        public UserService(IOptions<AppSettings> appSettings,NtoboaFundDbContext _context, IHostingEnvironment environment)
+        public UserManager<ApplicationUser> UserManager { get; }
+        public RoleManager<IdentityRole> RoleManager { get; }
+        public SignInManager<ApplicationUser> SignInManager { get; }
+
+        public UserService(IOptions<AppSettings> appSettings, NtoboaFundDbContext _context,
+            UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager
+            , SignInManager<ApplicationUser> signInManager)
         {
+            RoleManager = roleManager;
+            SignInManager = signInManager;
+            UserManager = userManager;
             _appSettings = appSettings.Value;
             context = _context;
-            _environment = environment;
         }
 
         public ApplicationUser Authenticate(string username, string password)
         {
-            var User = context.Users.SingleOrDefault(x => x.Email == username && x.Password == password);
+            var signInResult = SignInManager.PasswordSignInAsync(username, password, false, false).Result;
+
 
             // return null if ApplicationUser not found
-            if (User == null)
+            if (!signInResult.Succeeded)
                 return null;
 
-           User = GenerateTokenForUser(User);
+            var user = context.Users.Include("BankDetails").Include("MomoDetails").FirstOrDefault(i => i.UserName.ToLower() == username.ToLower());
 
-            // remove password before returning
-            User.Password = null;
+            user = GenerateTokenForUser(user);
 
-            return User;
+
+            return user;
         }
 
-       public Tuple<ApplicationUser,string> Register(RegistrationDTO regUser)
+        public Tuple<ApplicationUser, string> Register(RegistrationDTO regUser)
         {
-            ApplicationUser user  = null;
-            
-                var User = context.Users.FirstOrDefault(x => x.Email == regUser.Email);
+            ApplicationUser user = null;
 
-                if (User != null)
-                {
-                    return Tuple.Create<ApplicationUser,string>(null,"User With Same Email Exists");
-                }
+            var User = context.Users.FirstOrDefault(x => x.Email == regUser.Email);
 
-                if (regUser.Password != regUser.ConfirmPassword)
-                {
-                    return Tuple.Create<ApplicationUser, string>(null, "Passwords Do Not Match"); 
-                }
-                user = new ApplicationUser
-                {
-                    FirstName = regUser.FirstName,
-                    LastName = regUser.LastName,
-                    PhoneNumber = regUser.PhoneNumber,
-                    Email = regUser.Email,
-                    Password = regUser.Password
+            if (User != null)
+            {
+                return Tuple.Create<ApplicationUser, string>(null, "User With Same Email Exists");
+            }
 
-                };
+            if (regUser.Password != regUser.ConfirmPassword)
+            {
+                return Tuple.Create<ApplicationUser, string>(null, "Passwords Do Not Match");
+            }
+            var momoDetails = new MobileMoneyDetails();
+            var bankDetails = new BankDetails();
+            user = new ApplicationUser
+            {
+                UserName = regUser.Email,
+                FirstName = regUser.FirstName,
+                LastName = regUser.LastName,
+                PhoneNumber = regUser.PhoneNumber,
+                Email = regUser.Email,
+                MomoDetails = momoDetails,
+                BankDetails = bankDetails
+            };
 
-                if (regUser.Images?.Length > 0)
+            if (regUser.Images?.Length > 0)
+            {
+                try
                 {
-                    try
+                    if (!Directory.Exists(_environment.WebRootPath + "\\uploads\\"))
                     {
-                        if (!Directory.Exists(_environment.WebRootPath + "\\uploads\\"))
-                        {
-                            Directory.CreateDirectory(_environment.WebRootPath + "\\uploads\\");
-                        }
-                        using (FileStream filestream = File.Create(_environment.WebRootPath + "\\uploads\\" +regUser.Email.Split('@')[0]+".jpeg"))
-                        {
-                            regUser.Images.CopyTo(filestream);
-                            filestream.Flush();
-                            //return "\\uploads\\" + regUser.Images.FileName;
-                        }
+                        Directory.CreateDirectory(_environment.WebRootPath + "\\uploads\\");
                     }
-                    catch (Exception ex)
+                    using (FileStream filestream = File.Create(_environment.WebRootPath + "\\uploads\\" + regUser.Email.Split('@')[0] + ".jpeg"))
                     {
-                       // return ex.ToString();
+                        regUser.Images.CopyTo(filestream);
+                        filestream.Flush();
+                        //return "\\uploads\\" + regUser.Images.FileName;
                     }
                 }
-                context.Users.Add(user);
-                context.SaveChanges();
-                user = GenerateTokenForUser(user);
-                user.Password = null;
+                catch (Exception ex)
+                {
+                    // return ex.ToString();
+                }
+            }
 
+
+            IdentityResult result = UserManager.CreateAsync
+            (user, regUser.Password).Result;
+
+            var userRole = regUser.Role ?? "User";
+
+            if (result.Succeeded)
+            {
+                if (RoleManager.RoleExistsAsync(userRole).Result)
+                    UserManager.AddToRoleAsync(user, userRole).Wait();
+            }
+
+            context.SaveChanges();
+
+            user = GenerateTokenForUser(user);
+
+            //send Hubtel Message
             sendHubtelMessage(cookNumber(regUser.PhoneNumber));
-            
+
+            //send Email
             try
             {
                 string path = _environment.WebRootPath + "\\files\\html.txt";
@@ -130,22 +156,39 @@ namespace NtoboaFund.Services
             catch
             {
             }
-          
+
             return Tuple.Create<ApplicationUser, string>(user, null);
         }
 
         public ApplicationUser EditUser(UserEditDTO regUser)
         {
             var user = context.Users.Find(regUser.Id);
-            user.FirstName = regUser.FirstName;
-            user.LastName = regUser.LastName;
-            user.Email = regUser.Email;
-            user.PhoneNumber = regUser.PhoneNumber;
+            user.FirstName = regUser.FirstName == "null" ? null : regUser.FirstName;
+            user.LastName = regUser.LastName == "null" ? null : regUser.LastName;
+            user.Email = regUser.Email == "null" ? null : regUser.Email;
+            user.PhoneNumber = regUser.PhoneNumber == "null" ? null : regUser.PhoneNumber;
+
+            if (user.MomoDetails == null)
+                user.MomoDetails = new MobileMoneyDetails();
+            user.MomoDetails.Country = regUser.Country == "null" ? null : regUser.Country;
+            user.MomoDetails.Number = regUser.MobileMoneyNumber == "null" ? null : regUser.MobileMoneyNumber;
+            user.MomoDetails.Network = regUser.Network == "null" ? null : regUser.Network;
+            user.MomoDetails.Currency = regUser.Currency == "null" ? null : regUser.Currency;
+
+            if (user.BankDetails == null)
+                user.BankDetails = new BankDetails();
+            user.BankDetails.BankName = regUser.BankName == "null" ? null : regUser.BankName;
+            user.BankDetails.AccountNumber = regUser.AccountNumber == "null" ? null : regUser.AccountNumber;
+            user.BankDetails.SwiftCode = regUser.SwiftCode == "null" ? null : regUser.SwiftCode;
+
+            user.PreferedMoneyReceptionMethod = regUser.PreferredReceptionMethod == "null" ? null : regUser.PreferredReceptionMethod;
 
             try
             {
                 context.Entry(user).State = EntityState.Modified;
-                context.SaveChangesAsync();
+                context.Entry(user.BankDetails).State = EntityState.Modified;
+                context.Entry(user.MomoDetails).State = EntityState.Modified;
+                context.SaveChanges();
                 return user;
             }
             catch
@@ -156,22 +199,22 @@ namespace NtoboaFund.Services
         public IEnumerable<ApplicationUser> GetAll()
         {
             // return users without passwords
-            return _users.Select(x => {
-                x.Password = null;
-                return x;
-            });
+            return context.Users.ToList();
         }
 
-       
+        public ApplicationUser GetUser(string Id)
+        {
+            return context.Users.Find(Id);
+        }
 
         public string GetImagePath(string imageName)
         {
             var avatarPath = Path.Combine(_environment.WebRootPath + "\\uploads\\", $"{imageName}.jpeg");
-           
+
             return avatarPath;
         }
 
-       public ApplicationUser GenerateTokenForUser(ApplicationUser User)
+        public ApplicationUser GenerateTokenForUser(ApplicationUser User)
         {
             // authentication successful so generate jwt token
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -192,28 +235,28 @@ namespace NtoboaFund.Services
 
         public void sendHubtelMessage(string phoneNumber)
         {
-            string clientId = _appSettings.HubtelApiSettings.ApiKey;
-             string clientSecret = _appSettings.HubtelApiSettings.ApiSecret;
+            //string clientId = _appSettings.RaveApiSettings.ApiKey;
+            //string clientSecret = _appSettings.RaveApiSettings.ApiSecret;
 
-            try
-            {
-                var host = new ApiHost(new BasicAuth(clientId, clientSecret));
-                var messageApi = new MessagingApi(host);
-                MessageResponse msg = messageApi.SendQuickMessage("Ntoba-fund", phoneNumber, "Thank you for registering with ntoboa fund", true);
+            //try
+            //{
+            //    var host = new ApiHost(new BasicAuth(clientId, clientSecret));
+            //    var messageApi = new MessagingApi(host);
+            //    MessageResponse msg = messageApi.SendQuickMessage("Ntoba-fund", phoneNumber, "Thank you for registering with ntoboa fund", true);
 
-                //Console.WriteLine(msg.Status);
-            }
-            catch (Exception e)
-            {
-                if (e.GetType() == typeof(HttpRequestException))
-                {
-                    var ex = e as HttpRequestException;
-                    if (ex != null && ex.HttpResponse != null)
-                    {
-                        Console.WriteLine("Error Status Code " + ex.HttpResponse.Status);
-                    }
-                }
-            }
+            //    //Console.WriteLine(msg.Status);
+            //}
+            //catch (Exception e)
+            //{
+            //    if (e.GetType() == typeof(HttpRequestException))
+            //    {
+            //        var ex = e as HttpRequestException;
+            //        if (ex != null && ex.HttpResponse != null)
+            //        {
+            //            Console.WriteLine("Error Status Code " + ex.HttpResponse.Status);
+            //        }
+            //    }
+            //}
             //Console.ReadKey();
         }
 
@@ -222,11 +265,11 @@ namespace NtoboaFund.Services
         {
             string From = "info@ntoboafund.com";
             string FromPassword = "u8v@Dlh!Ew%;";
-            SmtpClient client = new SmtpClient("relay-hosting.secureserver.net",25);
+            SmtpClient client = new SmtpClient("relay-hosting.secureserver.net", 25);
 
             //client.Port = 587;
-           // client.DeliveryMethod = SmtpDeliveryMethod.Network;
-           // client.UseDefaultCredentials = false;
+            // client.DeliveryMethod = SmtpDeliveryMethod.Network;
+            // client.UseDefaultCredentials = false;
             System.Net.NetworkCredential credentials =
                 new System.Net.NetworkCredential(From, FromPassword);
             client.EnableSsl = false;
@@ -250,13 +293,13 @@ namespace NtoboaFund.Services
 
         public string cookNumber(string phoneNumber)
         {
-            if(phoneNumber.Length == 10 && phoneNumber.StartsWith('0'))
+            if (phoneNumber.Length == 10 && phoneNumber.StartsWith('0'))
             {
                 phoneNumber = phoneNumber.TrimStart('0');
                 phoneNumber = "+233" + phoneNumber;
             }
             return phoneNumber;
         }
-      
+
     }
 }

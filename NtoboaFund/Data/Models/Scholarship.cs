@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace NtoboaFund.Data.Models
 {
@@ -38,7 +34,11 @@ namespace NtoboaFund.Data.Models
         [Required]
         public string StudentId { get; set; }
 
-        
+        public int? TransferId { get; set; }
+
+        public string TxRef { get; set; }
+
+
         public string UserId { get; set; }
 
         [ForeignKey("UserId")]

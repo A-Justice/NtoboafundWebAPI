@@ -18,7 +18,7 @@ namespace NtoboaFund.SignalR
 
         public async Task GetCurrentScholarshipParticipants()
         {
-            var scholarshipParticipants = dbContext.Scholarships.Where(i => i.Status == "pending").Include("User").Select(i => new ScholarshipParticipantDTO
+            var scholarshipParticipants = dbContext.Scholarships.Where(i => i.Status == "paid").Include("User").Select(i => new ScholarshipParticipantDTO
             {
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
@@ -31,7 +31,7 @@ namespace NtoboaFund.SignalR
 
         public async Task GetCurrentBusinessParticipants()
         {
-            var scholarshipParticipants = dbContext.Businesses.Where(i => i.Status == "pending").Include("User").Select(i => new BusinessParticipantDTO
+            var scholarshipParticipants = dbContext.Businesses.Where(i => i.Status == "paid").Include("User").Select(i => new BusinessParticipantDTO
             {
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
@@ -44,7 +44,7 @@ namespace NtoboaFund.SignalR
 
         public async Task GetCurrentDailyLuckymeParticipants()
         {
-            var dailyLuckymeParticipants = dbContext.LuckyMes.Where(i => i.Status == "pending" && i.Period == "daily").Include("User").Select(i => new LuckyMeParticipantDTO
+            var dailyLuckymeParticipants = dbContext.LuckyMes.Where(i => i.Status == "paid" && i.Period == "daily").Include("User").Select(i => new LuckyMeParticipantDTO
             {
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
@@ -57,7 +57,7 @@ namespace NtoboaFund.SignalR
 
         public async Task GetCurrentWeeklyLuckymeParticipants()
         {
-            var weeklyLuckymeParticipants = dbContext.LuckyMes.Where(i => i.Status == "pending" && i.Period == "weekly").Include("User").Select(i => new LuckyMeParticipantDTO
+            var weeklyLuckymeParticipants = dbContext.LuckyMes.Where(i => i.Status == "paid" && i.Period == "weekly").Include("User").Select(i => new LuckyMeParticipantDTO
             {
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
@@ -70,7 +70,7 @@ namespace NtoboaFund.SignalR
 
         public async Task GetCurrentMonthlyLuckymeParticipants()
         {
-            var monthlyLuckymeParticipants = dbContext.Businesses.Where(i => i.Status == "pending" && i.Period == "monthly").Include("User").Select(i => new LuckyMeParticipantDTO
+            var monthlyLuckymeParticipants = dbContext.LuckyMes.Where(i => i.Status == "paid" && i.Period == "monthly").Include("User").Select(i => new LuckyMeParticipantDTO
             {
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,

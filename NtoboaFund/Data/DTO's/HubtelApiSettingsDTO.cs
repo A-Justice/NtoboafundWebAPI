@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace NtoboaFund.Data.DTO_s
 {
-    public class HubtelApiSettingsDTO
+    public class RaveApiSettingsDTO
     {
         public string ApiKey { get; set; }
 

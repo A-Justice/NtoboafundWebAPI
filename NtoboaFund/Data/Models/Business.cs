@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NtoboaFund.Data.Models
 {
@@ -27,6 +23,10 @@ namespace NtoboaFund.Data.Models
 
         //Date The Winner was Declared
         public string DateDeclared { get; set; }
+
+        public string TxRef { get; set; }
+
+        public int? TransferId { get; set; }
 
 
         public string UserId { get; set; }

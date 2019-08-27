@@ -1,10 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Internal;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace NtoboaFund.Data.DTO_s
 {
@@ -18,7 +13,7 @@ namespace NtoboaFund.Data.DTO_s
 
         [Required]
         public string LastName { get; set; }
-        
+
 
         [Required]
         public string Password { get; set; }
@@ -33,6 +28,8 @@ namespace NtoboaFund.Data.DTO_s
         [Required]
         [DataType(DataType.EmailAddress)]
         public string Email { get; set; }
+
+        public string Role { get; set; }
     }
 
     public class UserEditDTO
@@ -52,6 +49,23 @@ namespace NtoboaFund.Data.DTO_s
         [Required]
         [DataType(DataType.EmailAddress)]
         public string Email { get; set; }
+
+        public string Country { get; set; }
+
+        public string MobileMoneyNumber { get; set; }
+
+        public string Network { get; set; }
+
+        public string Currency { get; set; }
+
+        public string BankName { get; set; }
+
+        public string AccountNumber { get; set; }
+
+        public string SwiftCode { get; set; }
+
+        public string PreferredReceptionMethod { get; set; }
+
 
 
     }

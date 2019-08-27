@@ -9,54 +9,49 @@ using System.Threading.Tasks;
 
 namespace NtoboaFund.Controllers
 {
-    [Authorize]
     [Route("[controller]")]
     [ApiController]
-    public class LuckyMesController : ControllerBase
+    public class BusinessesController : ControllerBase
     {
+
         private readonly NtoboaFundDbContext _context;
 
-        public LuckyMesController(NtoboaFundDbContext context)
+        public BusinessesController(NtoboaFundDbContext context)
         {
             _context = context;
         }
 
-        // GET: api/LuckyMes
+        // GET: api/Businesses
         [HttpGet]
-        public IEnumerable<LuckyMe> GetLuckyMes()
+        public IEnumerable<Business> GetBusinesses()
         {
-            return _context.LuckyMes;
-        }
-
-        [HttpGet("withusers")]
-        public async Task<IEnumerable<LuckyMe>> GetLuckyMesWithUsers()
-        {
-            return await _context.LuckyMes.Include("User").ToListAsync();
+            return _context.Businesses;
         }
 
         [HttpGet("foruser/{userId}")]
-        public IEnumerable<LuckyMe> GetLuckyMes([FromRoute]string userId)
+        public IEnumerable<Business> GetBusinesses([FromRoute]string userId)
         {
-            return _context.LuckyMes.Where(l => l.UserId == userId);
+            return _context.Businesses.Where(l => l.UserId == userId);
         }
 
         [AllowAnonymous]
         [HttpGet("winners")]
-        public IEnumerable<LuckyMe> Winners()
+        public IEnumerable<Business> Winners()
         {
-            return _context.LuckyMes.Where(l => l.Status == "won").Include("User");
+            //Request
+            return _context.Businesses.Where(l => l.Status == "won").Include("User");
         }
 
-        // GET: api/LuckyMes/5
+        // GET: api/Businesses/5
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetLuckyMe([FromRoute] int id)
+        public async Task<IActionResult> GetBusiness([FromRoute] int id)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var luckyMe = await _context.LuckyMes.FindAsync(id);
+            var luckyMe = await _context.Businesses.FindAsync(id);
 
             if (luckyMe == null)
             {
@@ -66,9 +61,9 @@ namespace NtoboaFund.Controllers
             return Ok(luckyMe);
         }
 
-        // PUT: api/LuckyMes/5
+        // PUT: api/Businesses/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutLuckyMe([FromRoute] int id, [FromBody] LuckyMe luckyMe)
+        public async Task<IActionResult> PutBusiness([FromRoute] int id, [FromBody] Business luckyMe)
         {
             if (!ModelState.IsValid)
             {
@@ -88,7 +83,7 @@ namespace NtoboaFund.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!LuckyMeExists(id))
+                if (!BusinessExists(id))
                 {
                     return NotFound();
                 }
@@ -101,45 +96,45 @@ namespace NtoboaFund.Controllers
             return NoContent();
         }
 
-        // POST: api/LuckyMes
+        // POST: api/Businesses
         [HttpPost]
-        public async Task<IActionResult> PostLuckyMe([FromBody] LuckyMe luckyMe)
+        public async Task<IActionResult> PostBusiness([FromBody] Business luckyMe)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            _context.LuckyMes.Add(luckyMe);
+            _context.Businesses.Add(luckyMe);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetLuckyMe", new { id = luckyMe.Id }, luckyMe);
+            return CreatedAtAction("GetBusiness", new { id = luckyMe.Id }, luckyMe);
         }
 
-        // DELETE: api/LuckyMes/5
+        // DELETE: api/Businesses/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteLuckyMe([FromRoute] int id)
+        public async Task<IActionResult> DeleteBusiness([FromRoute] int id)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var luckyMe = await _context.LuckyMes.FindAsync(id);
+            var luckyMe = await _context.Businesses.FindAsync(id);
             if (luckyMe == null)
             {
                 return NotFound();
             }
 
-            _context.LuckyMes.Remove(luckyMe);
+            _context.Businesses.Remove(luckyMe);
             await _context.SaveChangesAsync();
 
             return Ok(luckyMe);
         }
 
-        private bool LuckyMeExists(int id)
+        private bool BusinessExists(int id)
         {
-            return _context.LuckyMes.Any(e => e.Id == id);
+            return _context.Businesses.Any(e => e.Id == id);
         }
     }
 }

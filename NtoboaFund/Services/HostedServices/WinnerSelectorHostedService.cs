@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NtoboaFund.Data.DBContext;
@@ -27,16 +28,18 @@ namespace NtoboaFund.Services.HostedServices
         public IHubContext<CountdownHub> CountdownHub { get; }
         public IHubContext<StakersHub> StakersHub { get; }
         public IHubContext<WinnerSelectionHub> WinnerSelectionHub { get; }
+        public PaymentService PaymentService { get; }
 
         public ScopedProcessingService(NtoboaFundDbContext _context,
             IHubContext<StakersHub> _stakersHub,
             IHubContext<CountdownHub> _countdownHub,
-            IHubContext<WinnerSelectionHub> _winnerSelectionHub)
+            IHubContext<WinnerSelectionHub> _winnerSelectionHub, PaymentService paymentService)
         {
             context = _context;
             CountdownHub = _countdownHub;
             StakersHub = _stakersHub;
             WinnerSelectionHub = _winnerSelectionHub;
+            PaymentService = paymentService;
         }
 
         public void DoWork()
@@ -83,7 +86,7 @@ namespace NtoboaFund.Services.HostedServices
                     else
                     {
                         //send a blank winner
-                        await WinnerSelectionHub.Clients.All.SendAsync("luckymeDailyWinner", new LuckyMeParticipantDTO
+                        await WinnerSelectionHub.Clients.All.SendAsync("dailyLuckymeWinner", new LuckyMeParticipantDTO
                         {
                             UserName = "No Participants",
                             UserId = "",
@@ -135,7 +138,7 @@ namespace NtoboaFund.Services.HostedServices
                     else
                     {
                         //send a blank winner
-                        await WinnerSelectionHub.Clients.All.SendAsync("luckymeWeeklyWinner", new LuckyMeParticipantDTO
+                        await WinnerSelectionHub.Clients.All.SendAsync("weeklyLuckymeWinner", new LuckyMeParticipantDTO
                         {
                             UserName = "No Participants",
                             UserId = "",
@@ -327,7 +330,7 @@ namespace NtoboaFund.Services.HostedServices
                 //Get the Current Users who are eligible for a draw
                 //the eligible users date of stake should fall within this time
                 //&& Convert.ToDateTime(i.Date) >= DateLimit
-                var EligibleLuckyMeWinners = context.LuckyMes.Where(i => i.Status.ToLower() == "pending" && i.Period.ToLower() == selectedPeriod).ToList();
+                var EligibleLuckyMeWinners = context.LuckyMes.Where(i => i.Status.ToLower() == "paid" && i.Period.ToLower() == selectedPeriod).ToList();
 
                 //Run the Draw to choose a winner
                 selectedWinnerId = await RunLuckyMeAlgorithm(EligibleLuckyMeWinners);
@@ -347,7 +350,7 @@ namespace NtoboaFund.Services.HostedServices
                 if (entityType == EntityTypes.Luckyme)
                 {
                     ////Get the Current Users who are eligible for a draw
-                    var EligibleLuckyMeWinners = context.LuckyMes.Where(i => i.Status.ToLower() == "pending" && i.Period.ToLower() == selectedPeriod).ToList();
+                    var EligibleLuckyMeWinners = context.LuckyMes.Where(i => i.Status.ToLower() == "paid" && i.Period.ToLower() == selectedPeriod).ToList();
 
                     selectedWinnerId = await RunLuckyMeAlgorithm(EligibleLuckyMeWinners);
                 }
@@ -367,19 +370,19 @@ namespace NtoboaFund.Services.HostedServices
 
                 if (entityType == EntityTypes.Luckyme)
                 {
-                    var EligibleLuckyMeWinners = context.LuckyMes.Where(i => i.Status.ToLower() == "pending" && i.Period.ToLower() == selectedPeriod).ToList();
+                    var EligibleLuckyMeWinners = context.LuckyMes.Where(i => i.Status.ToLower() == "paid" && i.Period.ToLower() == selectedPeriod).ToList();
                     selectedWinnerId = await RunLuckyMeAlgorithm(EligibleLuckyMeWinners);
                 }
                 else if (entityType == EntityTypes.Business)
                 {
-                    var EligibleBusinessWinners = context.Businesses.Where(i => i.Status.ToLower() == "pending" && i.Period.ToLower() == selectedPeriod).ToList();
+                    var EligibleBusinessWinners = context.Businesses.Where(i => i.Status.ToLower() == "paid" && i.Period.ToLower() == selectedPeriod).ToList();
                     selectedWinnerId = await RunBusinessAlgorithm(EligibleBusinessWinners);
                 }
 
             }
             else if (_selectedPeriod == "quaterly")
             {
-                var eligibleScholarshipWinners = context.Scholarships.Where(i => i.Status.ToLower() == "pending" && i.Period.ToLower() == selectedPeriod/*&& Convert.ToDateTime(i.Date) >= threeMonthsAgo*/).ToList();
+                var eligibleScholarshipWinners = context.Scholarships.Where(i => i.Status.ToLower() == "paid" && i.Period.ToLower() == selectedPeriod/*&& Convert.ToDateTime(i.Date) >= threeMonthsAgo*/).ToList();
 
                 selectedWinnerId = await RunScholarshipAlgorithm(eligibleScholarshipWinners);
 
@@ -431,11 +434,18 @@ namespace NtoboaFund.Services.HostedServices
                 {
                     item.Status = "won";
                     //change the won amount later
-                    item.AmountToWin = 2000;
-                    var user = context.Users.Find(item.UserId);
+                    item.AmountToWin = 1;
+
+                    var user = context.Users.Where(u => u.Id == item.UserId).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
+
+
                     try
                     {
-                        //Operations.SendMail(user.Email,"Ntofund Winner",$"Dear {user.FirstName} {user.LastName}, your {item.Period} ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be pending directly into your Mobile Money Account");
+                        if (user.PreferedMoneyReceptionMethod == "momo")
+                        {
+                            PaymentService.MomoTransfer(user, item.AmountToWin, "luckyme");
+                            Operations.SendMail(user.Email, "Ntoboafund Winner", $"Dear {user.FirstName} {user.LastName}, your {item.Period} ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your Mobile Money Account");
+                        }
                     }
                     catch
                     {
@@ -447,7 +457,6 @@ namespace NtoboaFund.Services.HostedServices
                 item.Status = "lost";
 
             }
-
             return winnerId;
         }
 
@@ -493,22 +502,26 @@ namespace NtoboaFund.Services.HostedServices
                 {
                     item.Status = "won";
                     //change the won amount later
-                    item.AmountToWin = 10000;
-                    var user = context.Users.Find(item.UserId);
+                    item.AmountToWin = 1;
+                    var user = context.Users.Where(u => u.Id == item.UserId).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
+
                     try
                     {
+                        if (user.PreferedMoneyReceptionMethod == "momo")
+                        {
+                            PaymentService.MomoTransfer(user, item.AmountToWin, "Scholarship");
+                            Operations.SendMail(user.Email, "Ntofund Winner", $"Dear {user.FirstName} {user.LastName}, your Scholarhip ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your Mobile Money Account");
+                        }
+                        //await StakersHub.Clients.All.SendAsync("addscholarshipwinner", new ScholarshipParticipantDTO[]{
+                        //    new ScholarshipParticipantDTO
+                        //    {
+                        //        UserId = user.Id,
+                        //        UserName = user.FirstName + " " + user.LastName,
+                        //        AmountStaked = item.Amount.ToString(),
+                        //        AmountToWin = item.AmountToWin.ToString()
 
-                        Operations.SendMail(user.Email, "Ntofund Winner", $"Dear {user.FirstName} {user.LastName}, your {item.Period} ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your Mobile Money Account");
-                        await StakersHub.Clients.All.SendAsync("addscholarshipwinner", new ScholarshipParticipantDTO[]{
-                            new ScholarshipParticipantDTO
-                            {
-                                UserId = user.Id,
-                                UserName = user.FirstName + " " + user.LastName,
-                                AmountStaked = item.Amount.ToString(),
-                                AmountToWin = item.AmountToWin.ToString()
-
-                            }
-                        });
+                        //    }
+                        //});
                     }
                     catch
                     {
@@ -520,7 +533,6 @@ namespace NtoboaFund.Services.HostedServices
                 item.Status = "lost";
 
             }
-
             return winnerId;
         }
 
@@ -561,22 +573,26 @@ namespace NtoboaFund.Services.HostedServices
                 {
                     item.Status = "won";
                     //change the won amount later
-                    item.AmountToWin = 10000;
-                    var user = context.Users.Find(item.UserId);
+                    item.AmountToWin = 1;
+                    var user = context.Users.Where(u => u.Id == item.UserId).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
+
                     try
                     {
+                        if (user.PreferedMoneyReceptionMethod == "momo")
+                        {
+                            PaymentService.MomoTransfer(user, item.AmountToWin, "luckyme");
+                            Operations.SendMail(user.Email, "Ntoboafund Winner", $"Dear {user.FirstName} {user.LastName}, your Business ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your Mobile Money Account");
+                        }
+                        //await StakersHub.Clients.All.SendAsync("addscholarshipwinner", new ScholarshipParticipantDTO[]{
+                        //    new ScholarshipParticipantDTO
+                        //    {
+                        //        UserId = user.Id,
+                        //        UserName = user.FirstName + " " + user.LastName,
+                        //        AmountStaked = item.Amount.ToString(),
+                        //        AmountToWin = item.AmountToWin.ToString()
 
-                        Operations.SendMail(user.Email, "Ntofund Winner", $"Dear {user.FirstName} {user.LastName}, your {item.Period} ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your Mobile Money Account");
-                        await StakersHub.Clients.All.SendAsync("addscholarshipwinner", new ScholarshipParticipantDTO[]{
-                            new ScholarshipParticipantDTO
-                            {
-                                UserId = user.Id,
-                                UserName = user.FirstName + " " + user.LastName,
-                                AmountStaked = item.Amount.ToString(),
-                                AmountToWin = item.AmountToWin.ToString()
-
-                            }
-                        });
+                        //    }
+                        //});
                     }
                     catch
                     {
@@ -588,7 +604,6 @@ namespace NtoboaFund.Services.HostedServices
                 item.Status = "lost";
 
             }
-
             return winnerId;
         }
 

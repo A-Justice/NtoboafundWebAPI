@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace NtoboaFund.Data.DTO_s
+﻿namespace NtoboaFund.Data.DTO_s
 {
     public class ScholarshipParticipantDTO
     {
@@ -36,5 +31,6 @@ namespace NtoboaFund.Data.DTO_s
         public string AmountStaked { get; set; }
 
         public string AmountToWin { get; set; }
+
     }
 }

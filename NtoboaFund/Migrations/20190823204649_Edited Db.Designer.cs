@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NtoboaFund.Data.DBContext;
 
 namespace NtoboaFund.Migrations
 {
     [DbContext(typeof(NtoboaFundDbContext))]
-    partial class NtoboaFundDbContextModelSnapshot : ModelSnapshot
+    [Migration("20190823204649_Edited Db")]
+    partial class EditedDb
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -164,8 +166,6 @@ namespace NtoboaFund.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed");
 
-                    b.Property<string>("PreferedMoneyReceptionMethod");
-
                     b.Property<string>("SecurityStamp");
 
                     b.Property<string>("Token");
@@ -188,21 +188,6 @@ namespace NtoboaFund.Migrations
                     b.ToTable("AspNetUsers");
                 });
 
-            modelBuilder.Entity("NtoboaFund.Data.Models.BankDetails", b =>
-                {
-                    b.Property<string>("BankDetailsId");
-
-                    b.Property<string>("AccountNumber");
-
-                    b.Property<string>("BankName");
-
-                    b.Property<string>("SwiftCode");
-
-                    b.HasKey("BankDetailsId");
-
-                    b.ToTable("BankDetails");
-                });
-
             modelBuilder.Entity("NtoboaFund.Data.Models.Business", b =>
                 {
                     b.Property<int>("Id")
@@ -220,10 +205,6 @@ namespace NtoboaFund.Migrations
                     b.Property<string>("Period");
 
                     b.Property<string>("Status");
-
-                    b.Property<int?>("TransferId");
-
-                    b.Property<string>("TxRef");
 
                     b.Property<string>("UserId");
 
@@ -252,10 +233,6 @@ namespace NtoboaFund.Migrations
 
                     b.Property<string>("Status");
 
-                    b.Property<int?>("TransferId");
-
-                    b.Property<string>("TxRef");
-
                     b.Property<string>("UserId");
 
                     b.HasKey("Id");
@@ -263,25 +240,6 @@ namespace NtoboaFund.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("LuckyMes");
-                });
-
-            modelBuilder.Entity("NtoboaFund.Data.Models.MobileMoneyDetails", b =>
-                {
-                    b.Property<string>("MobileMoneyDetailsId");
-
-                    b.Property<string>("Country");
-
-                    b.Property<string>("Currency");
-
-                    b.Property<string>("Network");
-
-                    b.Property<string>("Number");
-
-                    b.Property<string>("Voucher");
-
-                    b.HasKey("MobileMoneyDetailsId");
-
-                    b.ToTable("MobileMoneyDetails");
                 });
 
             modelBuilder.Entity("NtoboaFund.Data.Models.Scholarship", b =>
@@ -311,10 +269,6 @@ namespace NtoboaFund.Migrations
                     b.Property<string>("StudentId")
                         .IsRequired();
 
-                    b.Property<int?>("TransferId");
-
-                    b.Property<string>("TxRef");
-
                     b.Property<string>("UserId");
 
                     b.HasKey("Id");
@@ -322,60 +276,6 @@ namespace NtoboaFund.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Scholarships");
-                });
-
-            modelBuilder.Entity("NtoboaFund.Data.Models.Status", b =>
-                {
-                    b.Property<int>("StatusId")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.HasKey("StatusId");
-
-                    b.ToTable("Statuses");
-                });
-
-            modelBuilder.Entity("NtoboaFund.Data.Models.Transfer", b =>
-                {
-                    b.Property<int>("TransferId")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<string>("account_number");
-
-                    b.Property<int>("amount");
-
-                    b.Property<string>("bank_code");
-
-                    b.Property<string>("bank_name");
-
-                    b.Property<string>("complete_message");
-
-                    b.Property<string>("currency");
-
-                    b.Property<DateTime>("date_created");
-
-                    b.Property<int>("fee");
-
-                    b.Property<string>("fullname");
-
-                    b.Property<int>("id");
-
-                    b.Property<int>("is_approved");
-
-                    b.Property<string>("message");
-
-                    b.Property<string>("narration");
-
-                    b.Property<string>("reference");
-
-                    b.Property<int>("requires_approval");
-
-                    b.Property<string>("status");
-
-                    b.HasKey("TransferId");
-
-                    b.ToTable("Transfer");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -423,14 +323,6 @@ namespace NtoboaFund.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("NtoboaFund.Data.Models.BankDetails", b =>
-                {
-                    b.HasOne("NtoboaFund.Data.Models.ApplicationUser", "User")
-                        .WithOne("BankDetails")
-                        .HasForeignKey("NtoboaFund.Data.Models.BankDetails", "BankDetailsId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
             modelBuilder.Entity("NtoboaFund.Data.Models.Business", b =>
                 {
                     b.HasOne("NtoboaFund.Data.Models.ApplicationUser", "User")
@@ -443,14 +335,6 @@ namespace NtoboaFund.Migrations
                     b.HasOne("NtoboaFund.Data.Models.ApplicationUser", "User")
                         .WithMany("LuckyMes")
                         .HasForeignKey("UserId");
-                });
-
-            modelBuilder.Entity("NtoboaFund.Data.Models.MobileMoneyDetails", b =>
-                {
-                    b.HasOne("NtoboaFund.Data.Models.ApplicationUser", "User")
-                        .WithOne("MomoDetails")
-                        .HasForeignKey("NtoboaFund.Data.Models.MobileMoneyDetails", "MobileMoneyDetailsId")
-                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("NtoboaFund.Data.Models.Scholarship", b =>

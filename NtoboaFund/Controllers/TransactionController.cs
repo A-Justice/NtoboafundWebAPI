@@ -11,6 +11,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -33,23 +35,28 @@ namespace NtoboaFund.Controllers
             StakersHub = stakersHub;
         }
 
-        [HttpPost("gethubtelurlforluckyme")]
-        public async Task<IActionResult> GetHubtelUrlForLuckyMe([FromBody]LuckyMe LuckyMe)
+        [HttpPost("verifyLuckymePayment/{txRef}")]
+        public async Task<IActionResult> VerifyLuckymePayment(string txRef, [FromBody]LuckyMe LuckyMe)
         {
             LuckyMe.Date = DateTime.Now.ToLongDateString();
-            LuckyMe.AmountToWin = 2000;
-            LuckyMe.Status = "Pending";
+            LuckyMe.AmountToWin = LuckyMe.Amount * Charges.LuckymeStakeOdds;
+            LuckyMe.Status = "pending";
             LuckyMe.User = await context.Users.FindAsync(LuckyMe.UserId);
+            LuckyMe.TxRef = txRef;
             context.LuckyMes.Add(LuckyMe);
 
             string resultString = null;
             string errorString = null;
             try
             {
+                if (VerifyPayment(txRef))
+                    LuckyMe.Status = "paid";
+                else
+                    LuckyMe.Status = "pending";
 
                 await context.SaveChangesAsync();
 
-                if (LuckyMe.User != null) //send the currently added participant to all clients
+                if (LuckyMe.User != null && LuckyMe.Status == "paid") //send the currently added participant to all clients
                 {
                     if (LuckyMe.Period.ToLower() == "daily")
                     {
@@ -89,7 +96,7 @@ namespace NtoboaFund.Controllers
 
 
 
-                resultString = GenerateHubtelUrl(LuckyMe.Id, LuckyMe.Amount, "luckyme");
+                // resultString = GenerateHubtelUrl(LuckyMe.Id, LuckyMe.Amount, "luckyme");
             }
             catch (Exception ex)
             {
@@ -103,21 +110,23 @@ namespace NtoboaFund.Controllers
         }
 
 
-        [HttpPost("gethubtelurlforscholarship")]
-        public async Task<IActionResult> GetHubtelUrlForScholarship([FromBody]Scholarship Scholarship)
+        [HttpPost("verifyScholarshipPayment/{txRef}")]
+        public async Task<IActionResult> VerifyScholarshipPayment(string txRef, [FromBody]Scholarship Scholarship)
         {
-            Scholarship.Amount = 100;
+
+
+            Scholarship.Amount = Charges.ScholarshipStakeAmount;
             Scholarship.Date = DateTime.Now.ToLongDateString();
-            Scholarship.AmountToWin = 10000;
+            Scholarship.AmountToWin = (Scholarship.Amount * Charges.ScholarshipStakeOdds);
             Scholarship.Status = "Pending";
             Scholarship.Period = "quaterly";
+            Scholarship.TxRef = txRef;
             Scholarship.User = context.Users.Find(Scholarship.UserId);
 
             if (ModelState.IsValid)
             {
-                Scholarship.UserId = null;
+                //Scholarship.UserId = null;
                 context.Scholarships.Add(Scholarship);
-
             }
             else
                 BadRequest("Submitted Form is Invalid");
@@ -127,19 +136,32 @@ namespace NtoboaFund.Controllers
 
             try
             {
+                if (VerifyPayment(txRef))
+                    Scholarship.Status = "paid";
+                else
+                    Scholarship.Status = "pending";
+
                 await context.SaveChangesAsync();
                 //Find the current user associated with the scholarship
 
-                if (Scholarship.User != null) //send the currently added participant to all clients
+
+                //send the currently added participant to all clients
+                if (Scholarship.User != null && Scholarship.Status == "paid")
+                {
                     await StakersHub.Clients.All.SendAsync("addscholarshipparticipant",
-                         new ScholarshipParticipantDTO
-                         {
-                             UserId = Scholarship.User.Id,
-                             UserName = Scholarship.User.FirstName + " " + Scholarship.User.LastName,
-                             AmountStaked = Scholarship.Amount.ToString(),
-                             AmountToWin = Scholarship.AmountToWin.ToString()
-                         });
-                resultString = GenerateHubtelUrl(Scholarship.Id, Scholarship.Amount, "scholarship");
+                       new ScholarshipParticipantDTO
+                       {
+                           UserId = Scholarship.User.Id,
+                           UserName = Scholarship.User.FirstName + " " + Scholarship.User.LastName,
+                           AmountStaked = Scholarship.Amount.ToString(),
+                           AmountToWin = Scholarship.AmountToWin.ToString()
+                       });
+                }
+                else if (Scholarship.Status != "paid")
+                {
+                    errorString = "Payment Could not be verfied";
+                }
+
             }
             catch (Exception ex)
             {
@@ -153,13 +175,14 @@ namespace NtoboaFund.Controllers
         }
 
 
-        [HttpPost("gethubtelurlforbusiness")]
-        public async Task<IActionResult> GetHubtelUrlForBusiness([FromBody]Business business)
+        [HttpPost("verifyBusinessPayment/{txRef}")]
+        public async Task<IActionResult> VerifyBusinessPayment(string txRef, [FromBody]Business business)
         {
             business.Date = DateTime.Now.ToLongDateString();
-            business.AmountToWin = 10000;
+            business.AmountToWin = (business.Amount * Charges.BusinessStakeOdds);
             business.Status = "Pending";
             business.Period = "monthly";
+            business.TxRef = txRef;
             business.User = context.Users.Find(business.UserId);
 
             if (ModelState.IsValid)
@@ -176,10 +199,16 @@ namespace NtoboaFund.Controllers
 
             try
             {
+
+                if (VerifyPayment(txRef))
+                    business.Status = "paid";
+                else
+                    business.Status = "pending";
+
                 await context.SaveChangesAsync();
                 //Find the current user associated with the business
 
-                if (business.User != null) //send the currently added participant to all clients
+                if (business.User != null && business.Status == "paid") //send the currently added participant to all clients
                     await StakersHub.Clients.All.SendAsync("addbusinessparticipant",
                          new BusinessParticipantDTO
                          {
@@ -188,7 +217,7 @@ namespace NtoboaFund.Controllers
                              AmountStaked = business.Amount.ToString(),
                              AmountToWin = business.AmountToWin.ToString()
                          });
-                resultString = GenerateHubtelUrl(business.Id, business.Amount, "business");
+                //resultString = GenerateHubtelUrl(business.Id, business.Amount, "business");
             }
             catch (Exception ex)
             {
@@ -202,18 +231,26 @@ namespace NtoboaFund.Controllers
         }
 
 
-        [HttpPost("hubtelcallback")]
-        public IActionResult HubtleCallBack(HubtelResponse response)
+        bool VerifyPayment(string txRef)
         {
-            return Ok(response);
-        }
 
-        [HttpPost("luckymepaid")]
-        public IActionResult LuckyMePaid(HubtelResponse response)
-        {
-            return Ok(response);
-        }
+            var data = new { txref = txRef, SECKEY = AppSettings.FlatterWaveSettings.GetApiSecret() };
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            var responseMessage = client.PostAsJsonAsync("https://api.ravepay.co/flwv3-pug/getpaidx/api/v2/verify", data).Result;
+            //please make sure to change this to production url when you go live
+            var responseStr = responseMessage.Content.ReadAsStringAsync().Result;
+            var response = JsonConvert.DeserializeObject<RaveResponse>(responseStr);
+            if (response.data.status == "successful" && response.data.chargecode == "00")
+            {
 
+                return true;
+
+            }
+
+            return false;
+
+        }
 
         public string Base64Encode(string plainText)
         {
@@ -229,8 +266,8 @@ namespace NtoboaFund.Controllers
             request.ContentType = "application/json";
             request.Method = "POST";
 
-            var authDetails = $"Basic {Base64Encode(AppSettings.HubtelApiSettings.ApiKey + ":" + AppSettings.HubtelApiSettings.ApiSecret)}";
-            request.Headers.Add("Authorization", authDetails);
+            //var authDetails = $"Basic {Base64Encode(AppSettings.RaveApiSettings.ApiKey + ":" + AppSettings.RaveApiSettings.ApiSecret)}";
+            //request.Headers.Add("Authorization", authDetails);
 
 
             using (var streamwriter = new StreamWriter(request.GetRequestStream()))
@@ -262,7 +299,7 @@ namespace NtoboaFund.Controllers
                 streamwriter.Write(json);
             }
 
-            HubtelResponse hubtelresponse = null;
+            RaveResponse raveResponse = null;
             string resultString = null;
 
             var response = (HttpWebResponse)request.GetResponse();
@@ -270,7 +307,7 @@ namespace NtoboaFund.Controllers
             using (var streamReader = new StreamReader(response.GetResponseStream()))
             {
                 resultString = streamReader.ReadToEnd();
-                hubtelresponse = JsonConvert.DeserializeObject<HubtelResponse>(resultString);
+                raveResponse = JsonConvert.DeserializeObject<RaveResponse>(resultString);
 
             }
             response.Close();
@@ -284,24 +321,28 @@ namespace NtoboaFund.Controllers
 
 
 
-    public class HubtelResponse
+    public class RaveResponse
     {
-        public string responseCode { get; set; }
+        public RaveResponseData data { get; set; }
+    }
 
+    public class RaveResponseData
+    {
+        public string txid { get; set; }
+        public string txref { get; set; }
+
+        public decimal amount { get; set; }
+
+        public string currency { get; set; }
+
+        //successful
         public string status { get; set; }
 
-        public HubtelData data { get; set; }
+        public string chargecode { get; set; }
     }
-    public class HubtelData
-    {
-        public string checkoutUrl { get; set; }
 
-        public string checkoutId { get; set; }
 
-        public string clientReference { get; set; }
 
-        public string message { get; set; }
-    }
 
 
 }

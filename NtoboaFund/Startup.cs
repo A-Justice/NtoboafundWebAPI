@@ -34,7 +34,7 @@ namespace NtoboaFund
             //GearHost
             //DefaultConnection
             //Azure
-            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Azure")));
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("Personal");
@@ -85,13 +85,14 @@ namespace NtoboaFund
             // configure DI for application services
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IScopedProcessingService, ScopedProcessingService>();
+            services.AddScoped<PaymentService>();
             services.AddHostedService<WinnerSelectorHostedService>();
             //services.AddTransient(typeof(StakersHub));
             services.AddSignalR();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public async void Configure(IApplicationBuilder app, IHostingEnvironment env, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             app.UseCors("NtuboaDefault");
             if (env.IsDevelopment())
@@ -113,6 +114,48 @@ namespace NtoboaFund
                 options.MapHub<WinnerSelectionHub>("/winnerselection");
             });
             app.UseMvc();
+
+            CreateUserRoles(userManager, roleManager);
+        }
+
+        private static void CreateUserRoles(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+        {
+
+            //Adding Admin Role
+            if (!roleManager.RoleExistsAsync("Admin").Result)
+            {
+                IdentityResult roleResult = roleManager.CreateAsync(new IdentityRole("Admin")).Result;
+
+            }
+
+            else if (!roleManager.RoleExistsAsync("User").Result)
+            {
+
+                IdentityResult roleResult = roleManager.CreateAsync(new IdentityRole("User")).Result;
+            }
+
+
+            if (userManager.FindByNameAsync("admin@ntoboafund.com").Result == null)
+            {
+                ApplicationUser user = new ApplicationUser();
+                user.UserName = "admin@ntoboafund.com";
+                user.Email = "admin@ntoboafund.com";
+
+                IdentityResult result = userManager.CreateAsync
+                (user, ".ntobaofundadmin.").Result;
+
+                if (result.Succeeded)
+                {
+                    //if (roleManager.RoleExistsAsync("Admin").Result)
+                    userManager.AddToRoleAsync(user, "Admin").Wait();
+                }
+
+            }
+            //Assign Admin role to the main User here we have given our newly registered 
+            //login id for Admin management
+            //ApplicationUser user = await UserManager.FindByEmailAsync("syedshanumcain@gmail.com");
+            //var User = new ApplicationUser();
+            //await UserManager.AddToRoleAsync(user, "Admin");
         }
     }
 }

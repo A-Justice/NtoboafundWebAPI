@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NtoboaFund.Data.DBContext;
 
 namespace NtoboaFund.Migrations
 {
     [DbContext(typeof(NtoboaFundDbContext))]
-    partial class NtoboaFundDbContextModelSnapshot : ModelSnapshot
+    [Migration("20190826215438_added other setup Tables")]
+    partial class addedothersetupTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -221,9 +223,7 @@ namespace NtoboaFund.Migrations
 
                     b.Property<string>("Status");
 
-                    b.Property<int?>("TransferId");
-
-                    b.Property<string>("TxRef");
+                    b.Property<int>("TransferId");
 
                     b.Property<string>("UserId");
 
@@ -252,9 +252,7 @@ namespace NtoboaFund.Migrations
 
                     b.Property<string>("Status");
 
-                    b.Property<int?>("TransferId");
-
-                    b.Property<string>("TxRef");
+                    b.Property<int>("TransferId");
 
                     b.Property<string>("UserId");
 
@@ -270,8 +268,6 @@ namespace NtoboaFund.Migrations
                     b.Property<string>("MobileMoneyDetailsId");
 
                     b.Property<string>("Country");
-
-                    b.Property<string>("Currency");
 
                     b.Property<string>("Network");
 
@@ -311,9 +307,7 @@ namespace NtoboaFund.Migrations
                     b.Property<string>("StudentId")
                         .IsRequired();
 
-                    b.Property<int?>("TransferId");
-
-                    b.Property<string>("TxRef");
+                    b.Property<int>("TransferId");
 
                     b.Property<string>("UserId");
 
