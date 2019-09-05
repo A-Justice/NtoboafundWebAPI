@@ -34,6 +34,27 @@ namespace NtoboaFund.Controllers
             return _context.Businesses.Where(l => l.UserId == userId);
         }
 
+        [HttpGet("bystatus/{status}")]
+        public IEnumerable<Business> GetBusinessesByStatus([FromRoute] string status)
+        {
+            if (status.ToLower() == "all")
+                return GetBusinesses();
+
+            return _context.Businesses.Where(i => i.Status.ToLower() == status);
+        }
+
+        [HttpGet("bytype/{type}")]
+        public IEnumerable<Business> GetBusinessesByType(string type)
+        {
+            if (type.ToLower() == "all")
+                return _context.Businesses;
+            else if (type.ToLower() == "2")
+                return _context.Businesses.Where(i => i.User.UserType.ToString() == type.ToLower());
+            else
+                return _context.Businesses.Where(i => i.User.UserType != 2);
+        }
+
+
         [AllowAnonymous]
         [HttpGet("winners")]
         public IEnumerable<Business> Winners()

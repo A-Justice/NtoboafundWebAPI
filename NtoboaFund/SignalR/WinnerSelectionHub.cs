@@ -21,10 +21,12 @@ namespace NtoboaFund.SignalR
         {
             var scholarshipParticipants = dbContext.Scholarships.Where(i => i.Status == "won").Include("User").Select(i => new ScholarshipParticipantDTO
             {
+                Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString()
+                AmountToWin = i.AmountToWin.ToString(),
+                Status = i.Status
 
             });
             await Clients.Caller.SendAsync("getCurrentScholarshipWinners", scholarshipParticipants.ToList());
@@ -34,10 +36,12 @@ namespace NtoboaFund.SignalR
         {
             var scholarshipParticipants = dbContext.Businesses.Where(i => i.Status == "won").Include("User").Select(i => new BusinessParticipantDTO
             {
+                Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString()
+                AmountToWin = i.AmountToWin.ToString(),
+                Status = i.Status
 
             });
             await Clients.Caller.SendAsync("getCurrentBusinessWinners", scholarshipParticipants.ToList());
@@ -48,10 +52,12 @@ namespace NtoboaFund.SignalR
         {
             var monthlyLuckymeWinners = dbContext.LuckyMes.Where(i => i.Status == "won" && i.Period.ToLower() == "monthly").Include("User").Select(i => new BusinessParticipantDTO
             {
+                Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString()
+                AmountToWin = i.AmountToWin.ToString(),
+                Status = i.Status
 
             });
             await Clients.Caller.SendAsync("getCurrentMonthlyLuckymeWinners", monthlyLuckymeWinners.ToList());
@@ -61,10 +67,12 @@ namespace NtoboaFund.SignalR
         {
             var weeklyLuckymeWinners = dbContext.LuckyMes.Where(i => i.Status == "won" && i.Period.ToLower() == "weekly").Include("User").Select(i => new LuckyMeParticipantDTO
             {
+                Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString()
+                AmountToWin = i.AmountToWin.ToString(),
+                Status = i.Status
 
             });
             await Clients.Caller.SendAsync("getCurrentWeeklyLuckymeWinners", weeklyLuckymeWinners.ToList());
@@ -74,10 +82,12 @@ namespace NtoboaFund.SignalR
         {
             var dailyLuckymeWinners = dbContext.LuckyMes.Where(i => i.Status == "won" && i.Period.ToLower() == "daily").Include("User").Select(i => new LuckyMeParticipantDTO
             {
+                Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString()
+                AmountToWin = i.AmountToWin.ToString(),
+                Status = i.Status
 
             });
             await Clients.Caller.SendAsync("getCurrentDailyLuckymeWinners", dailyLuckymeWinners.ToList());

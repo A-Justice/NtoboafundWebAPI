@@ -8,6 +8,7 @@ namespace NtoboaFund.Helpers
 
         public RaveApiSettingsDTO FlatterWaveSettings { get; set; }
 
-        
+
+        public SendGridSettingsDTO SendGridSettings { get; set; }
     }
 }

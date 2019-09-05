@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NtoboaFund.Data.DBContext;
+using NtoboaFund.Data.DTO_s;
 using NtoboaFund.Data.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,6 +30,18 @@ namespace NtoboaFund.Controllers
             return _context.LuckyMes;
         }
 
+        [HttpGet("bytype/{type}")]
+        public IEnumerable<LuckyMe> GetLuckyMesByType(string type)
+        {
+            if(type.ToLower() == "all")
+                return _context.LuckyMes;
+            else if(type.ToLower() == "2")
+                return _context.LuckyMes.Where(i=>i.User.UserType.ToString() == type.ToLower());
+            else
+                return _context.LuckyMes.Where(i => i.User.UserType != 2);
+        }
+
+
         [HttpGet("withusers")]
         public async Task<IEnumerable<LuckyMe>> GetLuckyMesWithUsers()
         {
@@ -38,6 +52,14 @@ namespace NtoboaFund.Controllers
         public IEnumerable<LuckyMe> GetLuckyMes([FromRoute]string userId)
         {
             return _context.LuckyMes.Where(l => l.UserId == userId);
+        }
+
+        [HttpGet("bystatus/{status}")]
+        public IEnumerable<LuckyMe> GetLuckyMesByStatus([FromRoute] string status)
+        {
+            if(status.ToLower() == "all")
+                return GetLuckyMes();
+            return _context.LuckyMes.Where(i=>i.Status.ToLower() == status);
         }
 
         [AllowAnonymous]

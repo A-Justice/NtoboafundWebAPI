@@ -49,16 +49,19 @@ namespace NtoboaFund.Services
         public UserManager<ApplicationUser> UserManager { get; }
         public RoleManager<IdentityRole> RoleManager { get; }
         public SignInManager<ApplicationUser> SignInManager { get; }
+        public MessagingService MessagingService { get; }
 
         public UserService(IOptions<AppSettings> appSettings, NtoboaFundDbContext _context,
             UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager
-            , SignInManager<ApplicationUser> signInManager)
+            , SignInManager<ApplicationUser> signInManager,MessagingService messagingService,IHostingEnvironment environment)
         {
             RoleManager = roleManager;
             SignInManager = signInManager;
+            MessagingService = messagingService;
             UserManager = userManager;
             _appSettings = appSettings.Value;
             context = _context;
+            _environment = environment;
         }
 
         public ApplicationUser Authenticate(string username, string password)
@@ -94,7 +97,10 @@ namespace NtoboaFund.Services
                 return Tuple.Create<ApplicationUser, string>(null, "Passwords Do Not Match");
             }
             var momoDetails = new MobileMoneyDetails();
+            context.MobileMoneyDetails.Add(momoDetails);
             var bankDetails = new BankDetails();
+            context.BankDetails.Add(bankDetails);
+
             user = new ApplicationUser
             {
                 UserName = regUser.Email,
@@ -138,24 +144,31 @@ namespace NtoboaFund.Services
                 if (RoleManager.RoleExistsAsync(userRole).Result)
                     UserManager.AddToRoleAsync(user, userRole).Wait();
             }
+            else
+            {
+                var errorString =string.Join(@"\n", result.Errors.Select(i=> $"{i.Code}\n{i.Description}" ));
+                return Tuple.Create<ApplicationUser, string>(null, errorString);
+            }
 
-            context.SaveChanges();
 
             user = GenerateTokenForUser(user);
 
             //send Hubtel Message
-            sendHubtelMessage(cookNumber(regUser.PhoneNumber));
-
+            
             //send Email
             try
             {
+                sendHubtelMessage(cookNumber(regUser.PhoneNumber));
                 string path = _environment.WebRootPath + "\\files\\html.txt";
                 string html = File.ReadAllText(path);
-                Operations.SendMail(regUser.Email, "Registration Successfull", html);
+                MessagingService.SendMail($"{user.FirstName} {user.LastName}",regUser.Email, "Registration Successfull", html);
             }
-            catch
+            catch(Exception ex)
             {
+                Console.WriteLine(ex.Message);
             }
+
+            context.SaveChanges();
 
             return Tuple.Create<ApplicationUser, string>(user, null);
         }
@@ -204,7 +217,7 @@ namespace NtoboaFund.Services
 
         public ApplicationUser GetUser(string Id)
         {
-            return context.Users.Find(Id);
+            return context.Users.Where(i=>i.Id == Id).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
         }
 
         public string GetImagePath(string imageName)

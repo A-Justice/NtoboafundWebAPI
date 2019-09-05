@@ -39,7 +39,7 @@ namespace NtoboaFund.Controllers
         public async Task<IActionResult> VerifyLuckymePayment(string txRef, [FromBody]LuckyMe LuckyMe)
         {
             LuckyMe.Date = DateTime.Now.ToLongDateString();
-            LuckyMe.AmountToWin = LuckyMe.Amount * Charges.LuckymeStakeOdds;
+            LuckyMe.AmountToWin = LuckyMe.Amount * Settings.LuckymeStakeOdds;
             LuckyMe.Status = "pending";
             LuckyMe.User = await context.Users.FindAsync(LuckyMe.UserId);
             LuckyMe.TxRef = txRef;
@@ -56,17 +56,20 @@ namespace NtoboaFund.Controllers
 
                 await context.SaveChangesAsync();
 
-                if (LuckyMe.User != null && LuckyMe.Status == "paid") //send the currently added participant to all clients
+                if (LuckyMe.User != null && LuckyMe.Status.ToLower() == "paid") //send the currently added participant to all clients
                 {
                     if (LuckyMe.Period.ToLower() == "daily")
                     {
                         await StakersHub.Clients.All.SendAsync("adddailyluckymeparticipant",
                         new LuckyMeParticipantDTO
                         {
+                            Id = LuckyMe.Id,
                             UserId = LuckyMe.User.Id,
                             UserName = LuckyMe.User.FirstName + " " + LuckyMe.User.LastName,
                             AmountStaked = LuckyMe.Amount.ToString(),
-                            AmountToWin = LuckyMe.AmountToWin.ToString()
+                            AmountToWin = LuckyMe.AmountToWin.ToString(),
+                            Status = LuckyMe.Status.ToLower()
+
                         });
                     }
                     else if (LuckyMe.Period.ToLower() == "weekly")
@@ -74,10 +77,12 @@ namespace NtoboaFund.Controllers
                         await StakersHub.Clients.All.SendAsync("addweeklyluckymeparticipant",
                            new LuckyMeParticipantDTO
                            {
+                               Id = LuckyMe.Id,
                                UserId = LuckyMe.User.Id,
                                UserName = LuckyMe.User.FirstName + " " + LuckyMe.User.LastName,
                                AmountStaked = LuckyMe.Amount.ToString(),
-                               AmountToWin = LuckyMe.AmountToWin.ToString()
+                               AmountToWin = LuckyMe.AmountToWin.ToString(),
+                               Status = LuckyMe.Status.ToLower()
                            });
                     }
                     else if (LuckyMe.Period.ToLower() == "monthly")
@@ -85,16 +90,16 @@ namespace NtoboaFund.Controllers
                         await StakersHub.Clients.All.SendAsync("addmonthlyluckymeparticipant",
                            new LuckyMeParticipantDTO
                            {
+                               Id = LuckyMe.Id,
                                UserId = LuckyMe.User.Id,
                                UserName = LuckyMe.User.FirstName + " " + LuckyMe.User.LastName,
                                AmountStaked = LuckyMe.Amount.ToString(),
-                               AmountToWin = LuckyMe.AmountToWin.ToString()
+                               AmountToWin = LuckyMe.AmountToWin.ToString(),
+                               Status = LuckyMe.Status.ToLower()
                            });
                     }
 
                 }
-
-
 
                 // resultString = GenerateHubtelUrl(LuckyMe.Id, LuckyMe.Amount, "luckyme");
             }
@@ -115,10 +120,10 @@ namespace NtoboaFund.Controllers
         {
 
 
-            Scholarship.Amount = Charges.ScholarshipStakeAmount;
+            Scholarship.Amount = Settings.ScholarshipStakeAmount;
             Scholarship.Date = DateTime.Now.ToLongDateString();
-            Scholarship.AmountToWin = (Scholarship.Amount * Charges.ScholarshipStakeOdds);
-            Scholarship.Status = "Pending";
+            Scholarship.AmountToWin = (Scholarship.Amount * Settings.ScholarshipStakeOdds);
+            Scholarship.Status= "Pending";
             Scholarship.Period = "quaterly";
             Scholarship.TxRef = txRef;
             Scholarship.User = context.Users.Find(Scholarship.UserId);
@@ -146,18 +151,20 @@ namespace NtoboaFund.Controllers
 
 
                 //send the currently added participant to all clients
-                if (Scholarship.User != null && Scholarship.Status == "paid")
+                if (Scholarship.User != null && Scholarship.Status.ToLower() == "paid")
                 {
                     await StakersHub.Clients.All.SendAsync("addscholarshipparticipant",
                        new ScholarshipParticipantDTO
                        {
+                           Id = Scholarship.Id,
                            UserId = Scholarship.User.Id,
                            UserName = Scholarship.User.FirstName + " " + Scholarship.User.LastName,
                            AmountStaked = Scholarship.Amount.ToString(),
-                           AmountToWin = Scholarship.AmountToWin.ToString()
+                           AmountToWin = Scholarship.AmountToWin.ToString(),
+                           Status = Scholarship.Status.ToLower()
                        });
                 }
-                else if (Scholarship.Status != "paid")
+                else if (Scholarship.Status.ToLower() != "paid")
                 {
                     errorString = "Payment Could not be verfied";
                 }
@@ -179,7 +186,7 @@ namespace NtoboaFund.Controllers
         public async Task<IActionResult> VerifyBusinessPayment(string txRef, [FromBody]Business business)
         {
             business.Date = DateTime.Now.ToLongDateString();
-            business.AmountToWin = (business.Amount * Charges.BusinessStakeOdds);
+            business.AmountToWin = (business.Amount * Settings.BusinessStakeOdds);
             business.Status = "Pending";
             business.Period = "monthly";
             business.TxRef = txRef;
@@ -208,14 +215,16 @@ namespace NtoboaFund.Controllers
                 await context.SaveChangesAsync();
                 //Find the current user associated with the business
 
-                if (business.User != null && business.Status == "paid") //send the currently added participant to all clients
+                if (business.User != null && business.Status.ToLower() == "paid") //send the currently added participant to all clients
                     await StakersHub.Clients.All.SendAsync("addbusinessparticipant",
                          new BusinessParticipantDTO
                          {
+                             Id = business.Id,
                              UserId = business.User.Id,
                              UserName = business.User.FirstName + " " + business.User.LastName,
                              AmountStaked = business.Amount.ToString(),
-                             AmountToWin = business.AmountToWin.ToString()
+                             AmountToWin = business.AmountToWin.ToString(),
+                             Status = business.Status.ToLower()
                          });
                 //resultString = GenerateHubtelUrl(business.Id, business.Amount, "business");
             }
@@ -228,6 +237,15 @@ namespace NtoboaFund.Controllers
 
             //  return Ok(hubtelresponse?.data?.checkoutUrl);
             return Ok(new { business, resultString, errorString });
+        }
+
+        [HttpPost("addpayment")]
+        public async Task<IActionResult> AddPayment([FromBody]Payment payment)
+        {
+            payment.DatePayed = DateTime.Now;
+            context.Payments.Add(payment);
+            await context.SaveChangesAsync();
+            return Ok("Payment Made Successfully");
         }
 
 

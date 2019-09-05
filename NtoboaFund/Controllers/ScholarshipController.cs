@@ -36,6 +36,28 @@ namespace NtoboaFund.Controllers
             return _context.Scholarships.Where(l=>l.UserId == userId);
         }
 
+        [HttpGet("bystatus/{status}")]  
+        public IEnumerable<Scholarship> GetScholarshipsByStatus([FromRoute] string status)
+        {
+            if (status.ToLower() == "all")
+                return GetScholarships();
+
+            return _context.Scholarships.Where(i => i.Status.ToLower() == status);
+        }
+
+        [HttpGet("bytype/{type}")]
+        public IEnumerable<Scholarship> GetScholarshipsByType(string type)
+        {
+            if (type.ToLower() == "all")
+                return _context.Scholarships;
+            else if (type.ToLower() == "2")
+                return _context.Scholarships.Where(i => i.User.UserType.ToString() == type.ToLower());
+            else
+                return _context.Scholarships.Where(i => i.User.UserType != 2);
+        }
+
+
+
         [AllowAnonymous]
         [HttpGet("winners")]
         public IEnumerable<Scholarship> Winners()

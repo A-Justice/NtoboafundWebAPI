@@ -13,7 +13,11 @@ using NtoboaFund.Helpers;
 using NtoboaFund.Services;
 using NtoboaFund.Services.HostedServices;
 using NtoboaFund.SignalR;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace NtoboaFund
 {
@@ -34,7 +38,7 @@ namespace NtoboaFund
             //GearHost
             //DefaultConnection
             //Azure
-            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Azure")));
+            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("Personal");
@@ -86,13 +90,21 @@ namespace NtoboaFund
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IScopedProcessingService, ScopedProcessingService>();
             services.AddScoped<PaymentService>();
+            services.AddScoped<MessagingService>();
+            services.AddScoped<StakersHub>();
+            services.AddScoped<DummyService>();
             services.AddHostedService<WinnerSelectorHostedService>();
+
             //services.AddTransient(typeof(StakersHub));
-            services.AddSignalR();
+            services.AddSignalR(options =>
+            {
+                options.EnableDetailedErrors = true;
+                options.KeepAliveInterval = TimeSpan.FromHours(1);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public async void Configure(IApplicationBuilder app, IHostingEnvironment env, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+        public async void Configure(IApplicationBuilder app, IHostingEnvironment env,NtoboaFundDbContext dbContext, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             app.UseCors("NtuboaDefault");
             if (env.IsDevelopment())
@@ -109,13 +121,27 @@ namespace NtoboaFund
             app.UseHttpsRedirection();
             app.UseSignalR(options =>
             {
-                options.MapHub<StakersHub>("/stakers");
-                options.MapHub<CountdownHub>("/countdown");
-                options.MapHub<WinnerSelectionHub>("/winnerselection");
+                options.MapHub<StakersHub>("/stakers", hubOptions =>
+                {
+                    hubOptions.WebSockets.CloseTimeout = TimeSpan.FromHours(1);
+                    hubOptions.LongPolling.PollTimeout = TimeSpan.FromHours(1);
+                });
+                options.MapHub<CountdownHub>("/countdown", hubOptions =>
+                {
+                    hubOptions.WebSockets.CloseTimeout = TimeSpan.FromHours(1);
+                    hubOptions.LongPolling.PollTimeout = TimeSpan.FromHours(1);
+                });
+                options.MapHub<WinnerSelectionHub>("/winnerselection", hubOptions =>
+                {
+                    hubOptions.WebSockets.CloseTimeout = TimeSpan.FromHours(1);
+                    hubOptions.LongPolling.PollTimeout = TimeSpan.FromHours(1);
+                });
             });
+
             app.UseMvc();
 
-            CreateUserRoles(userManager, roleManager);
+             CreateDefaultUserBuilder(dbContext);
+             CreateUserRoles(userManager, roleManager);
         }
 
         private static void CreateUserRoles(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
@@ -157,5 +183,148 @@ namespace NtoboaFund
             //var User = new ApplicationUser();
             //await UserManager.AddToRoleAsync(user, "Admin");
         }
+
+        private static void CreateDefaultUserBuilder(NtoboaFundDbContext dbContext)
+        {
+            if(dbContext.UserBuilders.All(i=>i.FirstName != "Abraham")){
+                var userBuilders = new List<UserBuilder>
+                {
+                    new UserBuilder
+                    {
+                        FirstName = "Abraham",
+                         LastName = "Adofo"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Gyifa",
+                        LastName  = "Mensah"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Daniel",
+                        LastName  = "Adjei"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Samuel",
+                        LastName  = "Owusu"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Emmanuel",
+                        LastName  = "Doe"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Yvonne",
+                        LastName  = "Owusu"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Michael",
+                        LastName  = "Ato"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "David",
+                        LastName  = "Gbadago"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Samuel",
+                        LastName  = "Gadagidi"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Ralph",
+                        LastName  = "Davids"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Joshua",
+                        LastName  = "Ayi"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Emmanuel",
+                        LastName  = "Osa"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Emelia",
+                        LastName  = "Opare"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Sena",
+                        LastName  = "Agbo"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Mercy",
+                        LastName  = "Chinwe"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Annette",
+                        LastName  = "Larry"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Chris",
+                        LastName  = "Stapleton"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Emelia",
+                        LastName  = "Clark"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Regina",
+                        LastName  = "Hayford"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Kwame",
+                        LastName  = "Ansah"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Emmanuel",
+                        LastName  = "Asante"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Kwesi",
+                        LastName  = "Ampah"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Lisa",
+                        LastName  = "Ofori"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Raphael",
+                        LastName  = "Musa"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Alhasan",
+                        LastName  = "Kura"
+                    },
+                    new UserBuilder
+                    {
+                        FirstName = "Fuseini",
+                        LastName  = "Mamba"
+                    }
+                    
+                };
+                dbContext.UserBuilders.AddRange(userBuilders);
+                dbContext.SaveChanges();
+            }
+        }
     }
+
 }

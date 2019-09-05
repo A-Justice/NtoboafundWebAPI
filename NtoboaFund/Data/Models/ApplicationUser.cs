@@ -19,6 +19,12 @@ namespace NtoboaFund.Data.Models
 
         public string Token { get; set; }
 
+        /// <summary>
+        /// integers denoting type of user.. 1 standing for registered user 
+        /// 2 standing for system generated user.9
+        /// </summary>
+        public int UserType { get; set; }
+
         public virtual BankDetails BankDetails { get; set; }
 
         public virtual MobileMoneyDetails MomoDetails { get; set; }

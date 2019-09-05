@@ -24,6 +24,10 @@ namespace NtoboaFund.Data.DBContext
 
         public DbSet<Transfer> Transfers { get; set; }
 
+        public DbSet<Payment> Payments { get;set;}
+
+        public DbSet<UserBuilder> UserBuilders { get; set; }
+
         public NtoboaFundDbContext(DbContextOptions<NtoboaFundDbContext> options)
             : base(options)
         {

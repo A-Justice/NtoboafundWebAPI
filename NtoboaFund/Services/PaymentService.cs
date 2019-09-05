@@ -26,7 +26,7 @@ namespace NtoboaFund.Services
                 var data = new
                 {
                     account_bank = user.MomoDetails.Network,
-                    account_number = user.MomoDetails.Number,
+                    account_number = Operations.FormatGhanaianPhoneNumber(user.MomoDetails.Number),
                     amount = _amount,
                     seckey = AppSettings.FlatterWaveSettings.GetApiSecret(),
                     narration = "Ntoboa " + stakeType + " Winner",
@@ -46,11 +46,11 @@ namespace NtoboaFund.Services
 
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
 
             }
-            
+
         }
     }
 

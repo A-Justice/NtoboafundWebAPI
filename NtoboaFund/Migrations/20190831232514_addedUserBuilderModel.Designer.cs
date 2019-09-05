@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NtoboaFund.Data.DBContext;
 
 namespace NtoboaFund.Migrations
 {
     [DbContext(typeof(NtoboaFundDbContext))]
-    partial class NtoboaFundDbContextModelSnapshot : ModelSnapshot
+    [Migration("20190831232514_addedUserBuilderModel")]
+    partial class addedUserBuilderModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -284,29 +286,6 @@ namespace NtoboaFund.Migrations
                     b.HasKey("MobileMoneyDetailsId");
 
                     b.ToTable("MobileMoneyDetails");
-                });
-
-            modelBuilder.Entity("NtoboaFund.Data.Models.Payment", b =>
-                {
-                    b.Property<int>("PaymentId")
-                        .ValueGeneratedOnAdd()
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<DateTime>("DatePayed");
-
-                    b.Property<string>("ItemPayedFor");
-
-                    b.Property<int>("ItemPayedForId");
-
-                    b.Property<string>("PayerId");
-
-                    b.Property<string>("TransactionId");
-
-                    b.Property<string>("UserPayedId");
-
-                    b.HasKey("PaymentId");
-
-                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("NtoboaFund.Data.Models.Scholarship", b =>

@@ -16,7 +16,7 @@ namespace NtoboaFund.Data.Models
         //The Period of the bet
         public string Period { get; set; }
 
-        //Status of the bet ie. Pending, Paid, Wonder
+        //Status of the bet ie. Pending, paid, Wonder
         public string Status { get; set; }
 
         //Potential Amount To Win
