@@ -26,6 +26,16 @@ namespace NtoboaFund.Controllers
             return Ok(_userService.GetUser(Id));
         }
 
+        [HttpGet("getrole/{userId}")]
+        public async Task<IActionResult> GetUserRole(string userId)
+        {
+            var role = await _userService.GetUserRole(userId);
+            if ( role != null)
+                return Ok(new {role });
+
+            return BadRequest("Cannot find Role for User");
+        }
+
         [AllowAnonymous]
         [HttpPost("authenticate")]
         public IActionResult Authenticate([FromBody]AuthViewModel credentials)

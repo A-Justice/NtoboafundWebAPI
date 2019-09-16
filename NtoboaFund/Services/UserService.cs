@@ -15,6 +15,7 @@ using System.Linq;
 using System.Net.Mail;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace NtoboaFund.Services
 {
@@ -27,7 +28,7 @@ namespace NtoboaFund.Services
 
         IEnumerable<ApplicationUser> GetAll();
 
-
+         Task<string> GetUserRole(string userId);
 
         string GetImagePath(string userEmail);
 
@@ -171,6 +172,22 @@ namespace NtoboaFund.Services
             context.SaveChanges();
 
             return Tuple.Create<ApplicationUser, string>(user, null);
+        }
+
+        public async Task<string> GetUserRole(string userId)
+        {
+            string userRole = null;
+            try
+            {
+                var user = context.Users.Find(userId);
+
+                userRole = UserManager.GetRolesAsync(user).Result[0];
+            }
+            catch (Exception ex)
+            {
+                userRole = null;
+            }
+            return userRole;
         }
 
         public ApplicationUser EditUser(UserEditDTO regUser)

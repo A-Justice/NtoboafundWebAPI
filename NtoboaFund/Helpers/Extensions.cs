@@ -22,6 +22,10 @@ namespace NtoboaFund.Helpers
 
         public static DateTime EndOfWeek(this DateTime dateTime, int hours, int minutes, int seconds, int milliseconds)
         {
+            if(DateTime.Now.Day == dateTime.LastDayOfWeek().Day && DateTime.Now.Hour >= hours && DateTime.Now.Second > seconds)
+            {
+                dateTime = dateTime.AddDays(1);
+            }
             return new DateTime(
                 dateTime.LastDayOfWeek().Year,
                 dateTime.LastDayOfWeek().Month,

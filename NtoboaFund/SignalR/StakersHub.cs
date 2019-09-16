@@ -4,6 +4,7 @@ using NtoboaFund.Data.DBContext;
 using NtoboaFund.Data.DTO_s;
 using NtoboaFund.Data.Models;
 using NtoboaFund.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ namespace NtoboaFund.SignalR
 {
     public class StakersHub : Hub
     {
+        private static int _userCount = 0;
         public StakersHub(NtoboaFundDbContext _dbContext, DummyService dummyService)
         {
             dbContext = _dbContext;
@@ -396,5 +398,24 @@ namespace NtoboaFund.SignalR
 
             dbContext.SaveChanges();
         }
+
+        public async Task OnlineUsersCount()
+        {
+            await Clients.All.SendAsync("online", _userCount);
+        }
+       
+        public override Task OnConnectedAsync()
+        {
+            _userCount++;
+             Clients.All.SendAsync("online",_userCount);
+            return base.OnConnectedAsync();
+        }
+        public override Task OnDisconnectedAsync(Exception exception)
+        {
+            _userCount--;
+            Clients.All.SendAsync("online", _userCount);
+            return base.OnDisconnectedAsync(exception);
+        }
+       
     }
 }

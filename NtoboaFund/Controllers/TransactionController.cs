@@ -35,6 +35,8 @@ namespace NtoboaFund.Controllers
             StakersHub = stakersHub;
         }
 
+      //  public async Task<IActionResult> VerifyPayment()
+
         [HttpPost("verifyLuckymePayment/{txRef}")]
         public async Task<IActionResult> VerifyLuckymePayment(string txRef, [FromBody]LuckyMe LuckyMe)
         {
@@ -248,6 +250,10 @@ namespace NtoboaFund.Controllers
             return Ok("Payment Made Successfully");
         }
 
+        public async Task<IActionResult> RaveWebHook(WebhookCallback response)
+        {
+
+        }
 
         bool VerifyPayment(string txRef)
         {
@@ -276,63 +282,63 @@ namespace NtoboaFund.Controllers
             return Convert.ToBase64String(plainTextBytes);
         }
 
-
-        string GenerateHubtelUrl(int id, decimal amount, string name)
-        {
-            var request = (HttpWebRequest)WebRequest.Create("https://api.hubtel.com/v2/pos/onlinecheckout/items/initiate");
-            request.PreAuthenticate = true;
-            request.ContentType = "application/json";
-            request.Method = "POST";
-
-            //var authDetails = $"Basic {Base64Encode(AppSettings.RaveApiSettings.ApiKey + ":" + AppSettings.RaveApiSettings.ApiSecret)}";
-            //request.Headers.Add("Authorization", authDetails);
-
-
-            using (var streamwriter = new StreamWriter(request.GetRequestStream()))
+        
+            string GenerateHubtelUrl(int id, decimal amount, string name)
             {
-                //Get Algorithm to calculate amount to win
+                var request = (HttpWebRequest)WebRequest.Create("https://api.hubtel.com/v2/pos/onlinecheckout/items/initiate");
+                request.PreAuthenticate = true;
+                request.ContentType = "application/json";
+                request.Method = "POST";
 
-                string json = JsonConvert.SerializeObject(new
+                //var authDetails = $"Basic {Base64Encode(AppSettings.RaveApiSettings.ApiKey + ":" + AppSettings.RaveApiSettings.ApiSecret)}";
+                //request.Headers.Add("Authorization", authDetails);
+
+
+                using (var streamwriter = new StreamWriter(request.GetRequestStream()))
                 {
+                    //Get Algorithm to calculate amount to win
 
-                    items = new List<object>()
+                    string json = JsonConvert.SerializeObject(new
                     {
-                        new
+
+                        items = new List<object>()
                         {
-                            name = name,
-                            quantity=1,
-                            unitPrice = amount
-                        }
-                    },
-                    totalAmount = amount,
-                    description = "ntuboa",
-                    callbackUrl = "https://ntoboafund.gear.host/transaction/hubtelcallback",
-                    returnUrl = $"https://ntoboafund.herokuapp.com/{name}",
-                    merchantBusinessLogoUrl = "http://ntoboafund.herokuapp.com/assets/images/ntlog.png",
-                    merchantAccountNumber = "HM2706190002",
-                    cancellationUrl = $"https://ntoboafund.herokuapp.com/{name}",
-                    clientReference = name + id
-                });
+                            new
+                            {
+                                name = name,
+                                quantity=1,
+                                unitPrice = amount
+                            }
+                        },
+                        totalAmount = amount,
+                        description = "ntuboa",
+                        callbackUrl = "https://ntoboafund.gear.host/transaction/hubtelcallback",
+                        returnUrl = $"https://ntoboafund.herokuapp.com/{name}",
+                        merchantBusinessLogoUrl = "http://ntoboafund.herokuapp.com/assets/images/ntlog.png",
+                        merchantAccountNumber = "HM2706190002",
+                        cancellationUrl = $"https://ntoboafund.herokuapp.com/{name}",
+                        clientReference = name + id
+                    });
 
-                streamwriter.Write(json);
+                    streamwriter.Write(json);
+                }
+
+                RaveResponse raveResponse = null;
+                string resultString = null;
+
+                var response = (HttpWebResponse)request.GetResponse();
+
+                using (var streamReader = new StreamReader(response.GetResponseStream()))
+                {
+                    resultString = streamReader.ReadToEnd();
+                    raveResponse = JsonConvert.DeserializeObject<RaveResponse>(resultString);
+
+                }
+                response.Close();
+
+
+                return resultString;
             }
-
-            RaveResponse raveResponse = null;
-            string resultString = null;
-
-            var response = (HttpWebResponse)request.GetResponse();
-
-            using (var streamReader = new StreamReader(response.GetResponseStream()))
-            {
-                resultString = streamReader.ReadToEnd();
-                raveResponse = JsonConvert.DeserializeObject<RaveResponse>(resultString);
-
-            }
-            response.Close();
-
-
-            return resultString;
-        }
 
 
     }

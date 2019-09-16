@@ -38,7 +38,7 @@ namespace NtoboaFund
             //GearHost
             //DefaultConnection
             //Azure
-            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Azure"), i => i.EnableRetryOnFailure()));
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("Personal");
@@ -93,6 +93,7 @@ namespace NtoboaFund
             services.AddScoped<MessagingService>();
             services.AddScoped<StakersHub>();
             services.AddScoped<DummyService>();
+            services.AddScoped<AnalysisService>();
             services.AddHostedService<WinnerSelectorHostedService>();
 
             //services.AddTransient(typeof(StakersHub));
@@ -164,6 +165,8 @@ namespace NtoboaFund
             if (userManager.FindByNameAsync("admin@ntoboafund.com").Result == null)
             {
                 ApplicationUser user = new ApplicationUser();
+                user.FirstName = "Administrator";
+                user.LastName = "";
                 user.UserName = "admin@ntoboafund.com";
                 user.Email = "admin@ntoboafund.com";
 

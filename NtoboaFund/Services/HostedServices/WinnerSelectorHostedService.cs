@@ -75,8 +75,8 @@ namespace NtoboaFund.Services.HostedServices
 
         public async Task chooseDailyWinner(object obj)
         {
-            //var ddaydiff = DateTime.Now.DailyStakeEndDate() - DateTime.Now;
-            var ddaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            var ddaydiff = DateTime.Now.DailyStakeEndDate() - DateTime.Now;
+            //var ddaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             if (ddaydiff.TotalMinutes >= 0 && ddaydiff.TotalMinutes <= 1)
             {
@@ -134,15 +134,15 @@ namespace NtoboaFund.Services.HostedServices
             }
             else
             {
-                await CountdownHub.Clients.All.SendAsync("getDailyTime", ddaydiff.Hours, ddaydiff.Minutes - 1, ddaydiff.Seconds);
+                await CountdownHub.Clients.All.SendAsync("getDailyTime", ddaydiff.Hours, ddaydiff.Add(TimeSpan.FromMinutes(-1)).Minutes, ddaydiff.Seconds);
             }
 
         }
 
         public async Task chooseWeeklyWinner(object obj)
         {
-            //  var wdaydiff = DateTime.Now.EndOfWeek(18, 0, 0, 0) - DateTime.Now;
-            var wdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            var wdaydiff = DateTime.Now.EndOfWeek(18, 0, 0, 0) - DateTime.Now;
+           // var wdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             if (wdaydiff.TotalMinutes >= 0 && wdaydiff.TotalMinutes <= 1)
             {
@@ -195,14 +195,14 @@ namespace NtoboaFund.Services.HostedServices
             }
             else
             {
-                await CountdownHub.Clients.All.SendAsync("getWeeklyTime", wdaydiff.Days, wdaydiff.Hours, wdaydiff.Minutes - 1, wdaydiff.Seconds);
+                await CountdownHub.Clients.All.SendAsync("getWeeklyTime", wdaydiff.Days, wdaydiff.Hours, wdaydiff.Add(TimeSpan.FromMinutes(-1)).Minutes, wdaydiff.Seconds);
             }
         }
 
         public async Task chooseMonthlyWinner(object obj)
         {
-            // var mdaydiff = DateTime.Now.EndOfMonth(18, 0, 0, 0) - DateTime.Now;
-            var mdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+             var mdaydiff = DateTime.Now.EndOfMonth(18, 0, 0, 0) - DateTime.Now;
+           // var mdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             if (mdaydiff.TotalMinutes >= 0 && mdaydiff.TotalMinutes <= 1)
             {
@@ -306,14 +306,14 @@ namespace NtoboaFund.Services.HostedServices
             {
                 //Make sure the countdown does not run to negatives
                 if (mdaydiff.TotalSeconds >= 0)
-                    await CountdownHub.Clients.All.SendAsync("getMonthlyTime", mdaydiff.Days, mdaydiff.Hours, mdaydiff.Minutes - 1, mdaydiff.Seconds);
+                    await CountdownHub.Clients.All.SendAsync("getMonthlyTime", mdaydiff.Days, mdaydiff.Hours, mdaydiff.Add(TimeSpan.FromMinutes(-1)).Minutes, mdaydiff.Seconds);
             }
         }
 
         public async Task chooseQuaterlyWinner(object obj)
         {
-            // var qdaydiff = DateTime.Now.NextQuater(18, 2, 0, 0) - DateTime.Now;
-            var qdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            var qdaydiff = DateTime.Now.NextQuater(18, 0, 0, 0) - DateTime.Now;
+            //var qdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             //Drawing Takes a maximum of two minutes
             if (qdaydiff.TotalMinutes >= 0 && qdaydiff.TotalMinutes <= 1)
@@ -371,7 +371,7 @@ namespace NtoboaFund.Services.HostedServices
                 if (qdaydiff.TotalSeconds >= 0)
                 {
                     //subtract the 2minutes draw time from the countdown time
-                    await CountdownHub.Clients.All.SendAsync("getQuaterlyTime", qdaydiff.Days, qdaydiff.Hours, qdaydiff.Minutes - 1, qdaydiff.Seconds);
+                    await CountdownHub.Clients.All.SendAsync("getQuaterlyTime", qdaydiff.Days, qdaydiff.Hours, qdaydiff.Add(TimeSpan.FromMinutes(-1)).Minutes, qdaydiff.Seconds);
 
                 }
             }
