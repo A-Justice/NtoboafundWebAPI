@@ -23,6 +23,11 @@ namespace NtoboaFund.Data.DTO_s
         public string id { get; set; }
     }
 
+    public class Event
+    {
+        public string type { get; set; }
+    }
+
     public class WebhookCallback
     {
         public int id { get; set; }
@@ -38,5 +43,6 @@ namespace NtoboaFund.Data.DTO_s
         public string currency { get; set; }
         public Customer customer { get; set; }
         public Entity entity { get; set; }
+        public Event Event { get; set; }
     }
 }

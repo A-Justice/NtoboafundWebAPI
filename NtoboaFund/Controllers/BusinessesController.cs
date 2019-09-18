@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using NtoboaFund.Data.DBContext;
 using NtoboaFund.Data.Models;
+using NtoboaFund.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,24 +17,28 @@ namespace NtoboaFund.Controllers
     public class BusinessesController : ControllerBase
     {
 
-        private readonly NtoboaFundDbContext _context;
+        private readonly NtoboaFundDbContext dbContext;
 
-        public BusinessesController(NtoboaFundDbContext context)
+        private readonly AppSettings AppSettings;
+
+
+        public BusinessesController(IOptions<AppSettings> appSettings, NtoboaFundDbContext context)
         {
-            _context = context;
+            AppSettings = appSettings.Value;
+            dbContext = context;
         }
 
         // GET: api/Businesses
         [HttpGet]
         public IEnumerable<Business> GetBusinesses()
         {
-            return _context.Businesses;
+            return dbContext.Businesses;
         }
 
         [HttpGet("foruser/{userId}")]
         public IEnumerable<Business> GetBusinesses([FromRoute]string userId)
         {
-            return _context.Businesses.Where(l => l.UserId == userId);
+            return dbContext.Businesses.Where(l => l.UserId == userId);
         }
 
         [HttpGet("bystatus/{status}")]
@@ -40,18 +47,18 @@ namespace NtoboaFund.Controllers
             if (status.ToLower() == "all")
                 return GetBusinesses();
 
-            return _context.Businesses.Where(i => i.Status.ToLower() == status);
+            return dbContext.Businesses.Where(i => i.Status.ToLower() == status);
         }
 
         [HttpGet("bytype/{type}")]
         public IEnumerable<Business> GetBusinessesByType(string type)
         {
             if (type.ToLower() == "all")
-                return _context.Businesses;
+                return dbContext.Businesses;
             else if (type.ToLower() == "2")
-                return _context.Businesses.Where(i => i.User.UserType.ToString() == type.ToLower());
+                return dbContext.Businesses.Where(i => i.User.UserType.ToString() == type.ToLower());
             else
-                return _context.Businesses.Where(i => i.User.UserType != 2);
+                return dbContext.Businesses.Where(i => i.User.UserType != 2);
         }
 
 
@@ -60,7 +67,7 @@ namespace NtoboaFund.Controllers
         public IEnumerable<Business> Winners()
         {
             //Request
-            return _context.Businesses.Where(l => l.Status == "won").Include("User");
+            return dbContext.Businesses.Where(l => l.Status == "won").Include("User");
         }
 
         // GET: api/Businesses/5
@@ -72,7 +79,7 @@ namespace NtoboaFund.Controllers
                 return BadRequest(ModelState);
             }
 
-            var luckyMe = await _context.Businesses.FindAsync(id);
+            var luckyMe = await dbContext.Businesses.FindAsync(id);
 
             if (luckyMe == null)
             {
@@ -96,11 +103,11 @@ namespace NtoboaFund.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(luckyMe).State = EntityState.Modified;
+            dbContext.Entry(luckyMe).State = EntityState.Modified;
 
             try
             {
-                await _context.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -118,18 +125,25 @@ namespace NtoboaFund.Controllers
         }
 
         // POST: api/Businesses
-        [HttpPost]
-        public async Task<IActionResult> PostBusiness([FromBody] Business luckyMe)
+        [HttpPost("addnew")]
+        public async Task<IActionResult> PostBusiness([FromBody] Business business)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            _context.Businesses.Add(luckyMe);
-            await _context.SaveChangesAsync();
+            business.Date = DateTime.Now.ToLongDateString();
+            business.AmountToWin = (business.Amount * Settings.BusinessStakeOdds);
+            business.Status = "Pending";
+            business.Period = "monthly";
+            business.User = dbContext.Users.Find(business.UserId);
 
-            return CreatedAtAction("GetBusiness", new { id = luckyMe.Id }, luckyMe);
+            dbContext.Businesses.Add(business);
+
+            await dbContext.SaveChangesAsync();
+
+            return CreatedAtAction("GetBusiness", new { id = business.Id }, business);
         }
 
         // DELETE: api/Businesses/5
@@ -141,21 +155,21 @@ namespace NtoboaFund.Controllers
                 return BadRequest(ModelState);
             }
 
-            var luckyMe = await _context.Businesses.FindAsync(id);
+            var luckyMe = await dbContext.Businesses.FindAsync(id);
             if (luckyMe == null)
             {
                 return NotFound();
             }
 
-            _context.Businesses.Remove(luckyMe);
-            await _context.SaveChangesAsync();
+            dbContext.Businesses.Remove(luckyMe);
+            await dbContext.SaveChangesAsync();
 
             return Ok(luckyMe);
         }
 
         private bool BusinessExists(int id)
         {
-            return _context.Businesses.Any(e => e.Id == id);
+            return dbContext.Businesses.Any(e => e.Id == id);
         }
     }
 }

@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using NtoboaFund.Data.DBContext;
 using NtoboaFund.Data.DTO_s;
 using NtoboaFund.Data.Models;
+using NtoboaFund.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,42 +18,42 @@ namespace NtoboaFund.Controllers
     [ApiController]
     public class LuckyMesController : ControllerBase
     {
-        private readonly NtoboaFundDbContext _context;
-
-        public LuckyMesController(NtoboaFundDbContext context)
+        private readonly NtoboaFundDbContext dbContext;
+        private readonly AppSettings AppSettings;
+        public LuckyMesController(NtoboaFundDbContext context, IOptions<AppSettings> appSettings)
         {
-            _context = context;
+            dbContext = context;
         }
 
         // GET: api/LuckyMes
         [HttpGet]
         public IEnumerable<LuckyMe> GetLuckyMes()
         {
-            return _context.LuckyMes;
+            return dbContext.LuckyMes;
         }
 
         [HttpGet("bytype/{type}")]
         public IEnumerable<LuckyMe> GetLuckyMesByType(string type)
         {
             if(type.ToLower() == "all")
-                return _context.LuckyMes;
+                return dbContext.LuckyMes;
             else if(type.ToLower() == "2")
-                return _context.LuckyMes.Where(i=>i.User.UserType.ToString() == type.ToLower());
+                return dbContext.LuckyMes.Where(i=>i.User.UserType.ToString() == type.ToLower());
             else
-                return _context.LuckyMes.Where(i => i.User.UserType != 2);
+                return dbContext.LuckyMes.Where(i => i.User.UserType != 2);
         }
 
 
         [HttpGet("withusers")]
         public async Task<IEnumerable<LuckyMe>> GetLuckyMesWithUsers()
         {
-            return await _context.LuckyMes.Include("User").ToListAsync();
+            return await dbContext.LuckyMes.Include("User").ToListAsync();
         }
 
         [HttpGet("foruser/{userId}")]
         public IEnumerable<LuckyMe> GetLuckyMes([FromRoute]string userId)
         {
-            return _context.LuckyMes.Where(l => l.UserId == userId);
+            return dbContext.LuckyMes.Where(l => l.UserId == userId);
         }
 
         [HttpGet("bystatus/{status}")]
@@ -59,14 +61,14 @@ namespace NtoboaFund.Controllers
         {
             if(status.ToLower() == "all")
                 return GetLuckyMes();
-            return _context.LuckyMes.Where(i=>i.Status.ToLower() == status);
+            return dbContext.LuckyMes.Where(i=>i.Status.ToLower() == status);
         }
 
         [AllowAnonymous]
         [HttpGet("winners")]
         public IEnumerable<LuckyMe> Winners()
         {
-            return _context.LuckyMes.Where(l => l.Status == "won").Include("User");
+            return dbContext.LuckyMes.Where(l => l.Status == "won").Include("User");
         }
 
         // GET: api/LuckyMes/5
@@ -78,7 +80,7 @@ namespace NtoboaFund.Controllers
                 return BadRequest(ModelState);
             }
 
-            var luckyMe = await _context.LuckyMes.FindAsync(id);
+            var luckyMe = await dbContext.LuckyMes.FindAsync(id);
 
             if (luckyMe == null)
             {
@@ -102,11 +104,11 @@ namespace NtoboaFund.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(luckyMe).State = EntityState.Modified;
+            dbContext.Entry(luckyMe).State = EntityState.Modified;
 
             try
             {
-                await _context.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -124,7 +126,7 @@ namespace NtoboaFund.Controllers
         }
 
         // POST: api/LuckyMes
-        [HttpPost]
+        [HttpPost("addnew")]
         public async Task<IActionResult> PostLuckyMe([FromBody] LuckyMe luckyMe)
         {
             if (!ModelState.IsValid)
@@ -132,8 +134,13 @@ namespace NtoboaFund.Controllers
                 return BadRequest(ModelState);
             }
 
-            _context.LuckyMes.Add(luckyMe);
-            await _context.SaveChangesAsync();
+            luckyMe.Date = DateTime.Now.ToLongDateString();
+            luckyMe.AmountToWin = luckyMe.Amount * Settings.LuckymeStakeOdds;
+            luckyMe.Status = "pending";
+            luckyMe.User = await dbContext.Users.FindAsync(luckyMe.UserId);
+            dbContext.LuckyMes.Add(luckyMe);
+
+            await dbContext.SaveChangesAsync();
 
             return CreatedAtAction("GetLuckyMe", new { id = luckyMe.Id }, luckyMe);
         }
@@ -147,21 +154,21 @@ namespace NtoboaFund.Controllers
                 return BadRequest(ModelState);
             }
 
-            var luckyMe = await _context.LuckyMes.FindAsync(id);
+            var luckyMe = await dbContext.LuckyMes.FindAsync(id);
             if (luckyMe == null)
             {
                 return NotFound();
             }
 
-            _context.LuckyMes.Remove(luckyMe);
-            await _context.SaveChangesAsync();
+            dbContext.LuckyMes.Remove(luckyMe);
+            await dbContext.SaveChangesAsync();
 
             return Ok(luckyMe);
         }
 
         private bool LuckyMeExists(int id)
         {
-            return _context.LuckyMes.Any(e => e.Id == id);
+            return dbContext.LuckyMes.Any(e => e.Id == id);
         }
     }
 }

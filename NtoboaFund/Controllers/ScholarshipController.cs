@@ -6,8 +6,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using NtoboaFund.Data.DBContext;
 using NtoboaFund.Data.Models;
+using NtoboaFund.Helpers;
 
 namespace NtoboaFund.Controllers
 {
@@ -16,24 +18,25 @@ namespace NtoboaFund.Controllers
     [ApiController]
     public class ScholarshipsController : ControllerBase
     {
-        private readonly NtoboaFundDbContext _context;
-
-        public ScholarshipsController(NtoboaFundDbContext context)
+        private readonly NtoboaFundDbContext dbContext;
+        private readonly AppSettings AppSettings;
+        public ScholarshipsController(IOptions<AppSettings> appSettings, NtoboaFundDbContext context)
         {
-            _context = context;
+            AppSettings = appSettings.Value;
+            dbContext = context;
         }
 
         // GET: api/Scholarships
         [HttpGet]
         public IEnumerable<Scholarship> GetScholarships()
         {
-            return _context.Scholarships;
+            return dbContext.Scholarships;
         }
 
         [HttpGet("foruser/{userId}")]
         public IEnumerable<Scholarship> GetScholarships([FromRoute]string userId)
         {
-            return _context.Scholarships.Where(l=>l.UserId == userId);
+            return dbContext.Scholarships.Where(l=>l.UserId == userId);
         }
 
         [HttpGet("bystatus/{status}")]  
@@ -42,18 +45,18 @@ namespace NtoboaFund.Controllers
             if (status.ToLower() == "all")
                 return GetScholarships();
 
-            return _context.Scholarships.Where(i => i.Status.ToLower() == status);
+            return dbContext.Scholarships.Where(i => i.Status.ToLower() == status);
         }
 
         [HttpGet("bytype/{type}")]
         public IEnumerable<Scholarship> GetScholarshipsByType(string type)
         {
             if (type.ToLower() == "all")
-                return _context.Scholarships;
+                return dbContext.Scholarships;
             else if (type.ToLower() == "2")
-                return _context.Scholarships.Where(i => i.User.UserType.ToString() == type.ToLower());
+                return dbContext.Scholarships.Where(i => i.User.UserType.ToString() == type.ToLower());
             else
-                return _context.Scholarships.Where(i => i.User.UserType != 2);
+                return dbContext.Scholarships.Where(i => i.User.UserType != 2);
         }
 
 
@@ -63,7 +66,7 @@ namespace NtoboaFund.Controllers
         public IEnumerable<Scholarship> Winners()
         {
             //Request
-            return _context.Scholarships.Where(l => l.Status == "won").Include("User");
+            return dbContext.Scholarships.Where(l => l.Status == "won").Include("User");
         }
 
         // GET: api/Scholarships/5
@@ -75,7 +78,7 @@ namespace NtoboaFund.Controllers
                 return BadRequest(ModelState);
             }
 
-            var Scholarship = await _context.Scholarships.FindAsync(id);
+            var Scholarship = await dbContext.Scholarships.FindAsync(id);
 
             if (Scholarship == null)
             {
@@ -99,11 +102,11 @@ namespace NtoboaFund.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(Scholarship).State = EntityState.Modified;
+            dbContext.Entry(Scholarship).State = EntityState.Modified;
 
             try
             {
-                await _context.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -121,18 +124,25 @@ namespace NtoboaFund.Controllers
         }
 
         // POST: api/Scholarships
-        [HttpPost]
-        public async Task<IActionResult> PostScholarship([FromBody] Scholarship Scholarship)
+        [HttpPost("addnew")]
+        public async Task<IActionResult> PostScholarship([FromBody] Scholarship scholarship)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            _context.Scholarships.Add(Scholarship);
-            await _context.SaveChangesAsync();
+            scholarship.Amount = Settings.ScholarshipStakeAmount;
+            scholarship.Date = DateTime.Now.ToLongDateString();
+            scholarship.AmountToWin = (scholarship.Amount * Settings.ScholarshipStakeOdds);
+            scholarship.Status = "Pending";
+            scholarship.Period = "quaterly";
+            scholarship.User = dbContext.Users.Find(scholarship.UserId);
 
-            return CreatedAtAction("GetScholarship", new { id = Scholarship.Id }, Scholarship);
+            dbContext.Scholarships.Add(scholarship);
+            await dbContext.SaveChangesAsync();
+
+            return CreatedAtAction("GetScholarship", new { id = scholarship.Id }, scholarship);
         }
 
         // DELETE: api/Scholarships/5
@@ -144,21 +154,21 @@ namespace NtoboaFund.Controllers
                 return BadRequest(ModelState);
             }
 
-            var Scholarship = await _context.Scholarships.FindAsync(id);
+            var Scholarship = await dbContext.Scholarships.FindAsync(id);
             if (Scholarship == null)
             {
                 return NotFound();
             }
 
-            _context.Scholarships.Remove(Scholarship);
-            await _context.SaveChangesAsync();
+            dbContext.Scholarships.Remove(Scholarship);
+            await dbContext.SaveChangesAsync();
 
             return Ok(Scholarship);
         }
 
         private bool ScholarshipExists(int id)
         {
-            return _context.Scholarships.Any(e => e.Id == id);
+            return dbContext.Scholarships.Any(e => e.Id == id);
         }
     }
 }

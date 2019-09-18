@@ -36,7 +36,7 @@ namespace NtoboaFund
             services.AddCors(options => options.AddPolicy("NtuboaDefault", builder => builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
             //GearHost
-            //DefaultConnection
+            //DefaultConnectiona
             //Azure
             services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Azure"), i => i.EnableRetryOnFailure()));
 
@@ -119,7 +119,7 @@ namespace NtoboaFund
 
             app.UseAuthentication();
             app.UseStaticFiles();
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
             app.UseSignalR(options =>
             {
                 options.MapHub<StakersHub>("/stakers", hubOptions =>

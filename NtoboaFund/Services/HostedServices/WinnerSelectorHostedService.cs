@@ -37,15 +37,12 @@ namespace NtoboaFund.Services.HostedServices
         public StakersHub DataHub { get; }
         public DummyService DummyService { get; }
 
-        public ScopedProcessingService(NtoboaFundDbContext _context,
-            IHubContext<StakersHub> _stakersHub,
-            IHubContext<CountdownHub> _countdownHub,
-            IHubContext<WinnerSelectionHub> _winnerSelectionHub, PaymentService paymentService,
-            MessagingService messagingService,StakersHub dataHub,DummyService dummyService)
+        public ScopedProcessingService(NtoboaFundDbContext _context,IHubContext<StakersHub> _stakersHub,
+            IHubContext<CountdownHub> _countdownHub,IHubContext<WinnerSelectionHub> _winnerSelectionHub,
+            PaymentService paymentService,MessagingService messagingService,StakersHub dataHub,DummyService dummyService)
         {
             context = _context;
             CountdownHub = _countdownHub;
-
             StakersHub = _stakersHub;
             WinnerSelectionHub = _winnerSelectionHub;
             PaymentService = paymentService;
