@@ -10,5 +10,7 @@ namespace NtoboaFund.Helpers
 
 
         public SendGridSettingsDTO SendGridSettings { get; set; }
+
+        public MNotifySettingsDTO MNotifySettings { get; set; }
     }
 }

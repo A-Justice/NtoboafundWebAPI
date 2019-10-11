@@ -30,8 +30,8 @@ namespace NtoboaFund.Controllers
         public async Task<IActionResult> GetUserRole(string userId)
         {
             var role = await _userService.GetUserRole(userId);
-            if ( role != null)
-                return Ok(new {role });
+            if (role != null)
+                return Ok(new { role });
 
             return BadRequest("Cannot find Role for User");
         }
@@ -50,12 +50,12 @@ namespace NtoboaFund.Controllers
 
         [AllowAnonymous]
         [HttpPost("register")]
-        public IActionResult Register([FromForm]RegistrationDTO regDTO)
+        public async Task<IActionResult> Register([FromForm]RegistrationDTO regDTO)
         {
             Tuple<ApplicationUser, string> result = null;
             if (ModelState.IsValid)
             {
-                result = _userService.Register(regDTO);
+                result = await _userService.Register(regDTO);
 
             }
             else

@@ -6,4 +6,12 @@
         Business,
         Scholarship
     }
+
+    public enum Period
+    {
+        Daily,
+        Weekly,
+        Monthly,
+        Quaterly
+    }
 }

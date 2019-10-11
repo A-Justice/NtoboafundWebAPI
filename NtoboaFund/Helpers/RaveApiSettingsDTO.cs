@@ -3,8 +3,8 @@
     public class RaveApiSettingsDTO
     {
 
-      // string currentMode = "Test";
-       string currentMode = "Live";
+        string currentMode = "Test";
+        //string currentMode = "Live";
 
 
 

@@ -3,9 +3,7 @@ using NtoboaFund.Data.DBContext;
 using NtoboaFund.Data.Models;
 using NtoboaFund.Helpers;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace NtoboaFund.Services
 {
@@ -17,7 +15,7 @@ namespace NtoboaFund.Services
             context = dbContext;
         }
 
-        int GetRandomAmount(EntityTypes entityType)
+        static int GetRandomAmount(EntityTypes entityType)
         {
             var r = new Random();
             switch (entityType)
@@ -46,7 +44,7 @@ namespace NtoboaFund.Services
         /// <returns></returns>
         bool isUserParticipating(ApplicationUser user)
         {
-            if(user.LuckyMes.Any(i=>i.Status.ToLower() == "paid") || user.Businesses.Any(i => i.Status.ToLower() == "paid") || user.Scholarships.Any(i => i.Status.ToLower() == "paid"))
+            if (user.LuckyMes.Any(i => i.Status.ToLower() == "paid") || user.Businesses.Any(i => i.Status.ToLower() == "paid") || user.Scholarships.Any(i => i.Status.ToLower() == "paid"))
                 return true;
 
             return false;
@@ -63,7 +61,7 @@ namespace NtoboaFund.Services
 
                 foreach (var dummyUser in dummyUsers)
                 {
-                    if(isUserParticipating(dummyUser))
+                    if (isUserParticipating(dummyUser))
                         continue;
 
                     if (dummyUser.LuckyMes.All(i => Convert.ToDateTime(i.DateDeclared) < (DateTime.Now - TimeSpan.FromDays(Settings.DaysForDummyToRepeat))))
@@ -227,5 +225,7 @@ namespace NtoboaFund.Services
             return business;
 
         }
+
+
     }
 }

@@ -22,13 +22,14 @@ namespace NtoboaFund.Services
     public interface IUserService
     {
         ApplicationUser Authenticate(string username, string password);
-        Tuple<ApplicationUser, string> Register(RegistrationDTO user);
+
+        Task<Tuple<ApplicationUser, string>> Register(RegistrationDTO user);
 
         ApplicationUser EditUser(UserEditDTO user);
 
         IEnumerable<ApplicationUser> GetAll();
 
-         Task<string> GetUserRole(string userId);
+        Task<string> GetUserRole(string userId);
 
         string GetImagePath(string userEmail);
 
@@ -54,7 +55,7 @@ namespace NtoboaFund.Services
 
         public UserService(IOptions<AppSettings> appSettings, NtoboaFundDbContext _context,
             UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager
-            , SignInManager<ApplicationUser> signInManager,MessagingService messagingService,IHostingEnvironment environment)
+            , SignInManager<ApplicationUser> signInManager, MessagingService messagingService, IHostingEnvironment environment)
         {
             RoleManager = roleManager;
             SignInManager = signInManager;
@@ -69,7 +70,6 @@ namespace NtoboaFund.Services
         {
             var signInResult = SignInManager.PasswordSignInAsync(username, password, false, false).Result;
 
-
             // return null if ApplicationUser not found
             if (!signInResult.Succeeded)
                 return null;
@@ -82,7 +82,7 @@ namespace NtoboaFund.Services
             return user;
         }
 
-        public Tuple<ApplicationUser, string> Register(RegistrationDTO regUser)
+        public async Task<Tuple<ApplicationUser, string>> Register(RegistrationDTO regUser)
         {
             ApplicationUser user = null;
 
@@ -97,6 +97,7 @@ namespace NtoboaFund.Services
             {
                 return Tuple.Create<ApplicationUser, string>(null, "Passwords Do Not Match");
             }
+
             var momoDetails = new MobileMoneyDetails();
             context.MobileMoneyDetails.Add(momoDetails);
             var bankDetails = new BankDetails();
@@ -147,7 +148,7 @@ namespace NtoboaFund.Services
             }
             else
             {
-                var errorString =string.Join(@"\n", result.Errors.Select(i=> $"{i.Code}\n{i.Description}" ));
+                var errorString = string.Join(@"\n", result.Errors.Select(i => $"{i.Code}\n{i.Description}"));
                 return Tuple.Create<ApplicationUser, string>(null, errorString);
             }
 
@@ -155,16 +156,17 @@ namespace NtoboaFund.Services
             user = GenerateTokenForUser(user);
 
             //send Hubtel Message
-            
+
             //send Email
             try
             {
-                sendHubtelMessage(cookNumber(regUser.PhoneNumber));
+                //sendHubtelMessage(cookNumber(regUser.PhoneNumber));
                 string path = _environment.WebRootPath + "\\files\\html.txt";
                 string html = File.ReadAllText(path);
-                MessagingService.SendMail($"{user.FirstName} {user.LastName}",regUser.Email, "Registration Successfull", html);
+                await MessagingService.SendMail($"{user.FirstName} {user.LastName}", regUser.Email, "Registration Successfull", html);
+                await MessagingService.SendSms(user.PhoneNumber, Misc.GetRegisteredUserSmsMessage());
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
@@ -226,6 +228,7 @@ namespace NtoboaFund.Services
                 return null;
             }
         }
+
         public IEnumerable<ApplicationUser> GetAll()
         {
             // return users without passwords
@@ -234,7 +237,7 @@ namespace NtoboaFund.Services
 
         public ApplicationUser GetUser(string Id)
         {
-            return context.Users.Where(i=>i.Id == Id).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
+            return context.Users.Where(i => i.Id == Id).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
         }
 
         public string GetImagePath(string imageName)

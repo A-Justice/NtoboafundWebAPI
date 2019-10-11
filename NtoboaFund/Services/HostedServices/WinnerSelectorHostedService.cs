@@ -37,9 +37,9 @@ namespace NtoboaFund.Services.HostedServices
         public StakersHub DataHub { get; }
         public DummyService DummyService { get; }
 
-        public ScopedProcessingService(NtoboaFundDbContext _context,IHubContext<StakersHub> _stakersHub,
-            IHubContext<CountdownHub> _countdownHub,IHubContext<WinnerSelectionHub> _winnerSelectionHub,
-            PaymentService paymentService,MessagingService messagingService,StakersHub dataHub,DummyService dummyService)
+        public ScopedProcessingService(NtoboaFundDbContext _context, IHubContext<StakersHub> _stakersHub,
+            IHubContext<CountdownHub> _countdownHub, IHubContext<WinnerSelectionHub> _winnerSelectionHub,
+            PaymentService paymentService, MessagingService messagingService, StakersHub dataHub, DummyService dummyService)
         {
             context = _context;
             CountdownHub = _countdownHub;
@@ -49,6 +49,7 @@ namespace NtoboaFund.Services.HostedServices
             MessagingService = messagingService;
             DataHub = dataHub;
             DummyService = dummyService;
+
         }
 
         public void DoWork()
@@ -72,57 +73,61 @@ namespace NtoboaFund.Services.HostedServices
 
         public async Task chooseDailyWinner(object obj)
         {
-            var ddaydiff = DateTime.Now.DailyStakeEndDate() - DateTime.Now;
-            //var ddaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            //var ddaydiff = DateTime.Now.DailyStakeEndDate() - DateTime.Now;
+            var ddaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             if (ddaydiff.TotalMinutes >= 0 && ddaydiff.TotalMinutes <= 1)
             {
-                if ((int)Math.Floor(ddaydiff.TotalSeconds) == 1)
+                Console.WriteLine("d" + ddaydiff.TotalSeconds);
+                if ((int)Math.Floor(ddaydiff.TotalSeconds) < 1)
                 {
 
-                    var luckymeWinnerId = await ChooseWinnerAsync("daily", EntityTypes.Luckyme);
+                    var luckymeWinnersId = await ChooseWinnerAsync("daily", EntityTypes.Luckyme);
 
-                    var selectedLuckyMe = await context.LuckyMes.FindAsync(luckymeWinnerId);
+
+                    var selectedLuckyMes = context.LuckyMes.Where(i => luckymeWinnersId.Contains(i.Id));
 
                     //Put a dummy daily luckyme 
                     DummyService.FixLuckyMeDailyDummy();
 
 
-                    if (selectedLuckyMe != null)
+                    if (selectedLuckyMes?.Count() > 0)
                     {
-                        //send the selected daily luckyme winner to the UI
-                        await WinnerSelectionHub.Clients.All.SendAsync("dailyLuckymeWinner", new LuckyMeParticipantDTO
-                        {
-                            Id = selectedLuckyMe.Id,
-                            UserName = selectedLuckyMe.User.FirstName + " " + selectedLuckyMe.User.LastName,
-                            UserId = selectedLuckyMe.UserId,
-                            AmountStaked = selectedLuckyMe.Amount.ToString(),
-                            AmountToWin = selectedLuckyMe.AmountToWin.ToString(),
-                            Status = selectedLuckyMe.Status
-                        });
 
-                        
+                        //send the selected daily luckyme winner to the UI
+                        await WinnerSelectionHub.Clients.All.SendAsync("dailyLuckymeWinner", selectedLuckyMes.Select(i => new LuckyMeParticipantDTO
+                        {
+                            Id = i.Id,
+                            UserName = i.User.FirstName + " " + i.User.LastName,
+                            UserId = i.UserId,
+                            AmountStaked = i.Amount.ToString(),
+                            AmountToWin = i.AmountToWin.ToString(),
+                            Status = i.Status,
+                            DateDeclared = i.DateDeclared
+                        }));
+
                         //clear all current daily luckyme participants
                         await StakersHub.Clients.All.SendAsync("getCurrentDailyLuckymeParticipants", DataHub.GetDailyLuckymeParticipants());
+
                     }
                     else
                     {
                         //send a blank winner
-                        await WinnerSelectionHub.Clients.All.SendAsync("dailyLuckymeWinner", new LuckyMeParticipantDTO
+                        await WinnerSelectionHub.Clients.All.SendAsync("dailyLuckymeWinner", new List<LuckyMeParticipantDTO>(){new LuckyMeParticipantDTO
                         {
                             UserName = "No Participants",
                             UserId = "",
                             AmountStaked = "",
                             AmountToWin = ""
-                        });
+                        } });
                     }
 
-                   
+
                     await WinnerSelectionHub.Clients.All.SendAsync("ongoingDailyDraw", false);
                     await WinnerSelectionHub.Clients.All.SendAsync("ongoingDailyDraw", false);
 
-                    
-                    
+
+
                 }
                 else if ((int)Math.Floor(ddaydiff.TotalSeconds) > 1)
                 {
@@ -138,48 +143,52 @@ namespace NtoboaFund.Services.HostedServices
 
         public async Task chooseWeeklyWinner(object obj)
         {
-            var wdaydiff = DateTime.Now.EndOfWeek(18, 0, 0, 0) - DateTime.Now;
-           // var wdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            // var wdaydiff = DateTime.Now.EndOfWeek(18, 0, 0, 0) - DateTime.Now;
+            var wdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             if (wdaydiff.TotalMinutes >= 0 && wdaydiff.TotalMinutes <= 1)
             {
-                if ((int)Math.Floor(wdaydiff.TotalSeconds) == 1)
+                Console.WriteLine("w" + wdaydiff.TotalSeconds);
+
+                if ((int)Math.Floor(wdaydiff.TotalSeconds) < 1)
                 {
 
-                    var luckymeWeeklyWinnerId = await ChooseWinnerAsync("weekly", EntityTypes.Luckyme);
+                    var luckymeWeeklyWinnersId = await ChooseWinnerAsync("weekly", EntityTypes.Luckyme);
 
-                    var selectedLuckyMe = await context.LuckyMes.FindAsync(luckymeWeeklyWinnerId);
+                    var selectedLuckyMes = context.LuckyMes.Where(i => luckymeWeeklyWinnersId.Contains(i.Id));
 
                     //Put a dummy weekly luckyme 
                     DummyService.FixLuckyMeWeeklyDummy();
 
-                    if (selectedLuckyMe != null)
+                    if (selectedLuckyMes?.Count() > 0)
                     {
                         //send the selected daily luckyme winner to the UI
-                        await WinnerSelectionHub.Clients.All.SendAsync("weeklyLuckymeWinner", new LuckyMeParticipantDTO
+                        await WinnerSelectionHub.Clients.All.SendAsync("weeklyLuckymeWinner", selectedLuckyMes.Select(i => new LuckyMeParticipantDTO
                         {
-                            Id = selectedLuckyMe.Id,
-                            UserName = selectedLuckyMe.User.FirstName + " " + selectedLuckyMe.User.LastName,
-                            UserId = selectedLuckyMe.UserId,
-                            AmountStaked = selectedLuckyMe.Amount.ToString(),
-                            AmountToWin = selectedLuckyMe.AmountToWin.ToString(),
-                            Status = selectedLuckyMe.Status
-                        });
+                            Id = i.Id,
+                            UserName = i.User.FirstName + " " + i.User.LastName,
+                            UserId = i.UserId,
+                            AmountStaked = i.Amount.ToString(),
+                            AmountToWin = i.AmountToWin.ToString(),
+                            Status = i.Status,
+                            DateDeclared = i.DateDeclared
+                        }));
+
                         //clear all current daily luckyme participants
                         await StakersHub.Clients.All.SendAsync("getCurrentWeeklyLuckymeParticipants", DataHub.GetWeeklyLuckymeParticipants());
                     }
                     else
                     {
                         //send a blank winner
-                        await WinnerSelectionHub.Clients.All.SendAsync("weeklyLuckymeWinner", new LuckyMeParticipantDTO
+                        await WinnerSelectionHub.Clients.All.SendAsync("weeklyLuckymeWinner", new List<LuckyMeParticipantDTO>(){new LuckyMeParticipantDTO
                         {
                             UserName = "No Participants",
                             UserId = "",
                             AmountStaked = "",
                             AmountToWin = ""
-                        });
+                        } });
                     }
-                    
+
 
                     await WinnerSelectionHub.Clients.All.SendAsync("ongoingWeeklyDraw", false);
                     await WinnerSelectionHub.Clients.All.SendAsync("ongoingWeeklyDraw", false);
@@ -198,24 +207,25 @@ namespace NtoboaFund.Services.HostedServices
 
         public async Task chooseMonthlyWinner(object obj)
         {
-             var mdaydiff = DateTime.Now.EndOfMonth(18, 0, 0, 0) - DateTime.Now;
-           // var mdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            //var mdaydiff = DateTime.Now.EndOfMonth(18, 0, 0, 0) - DateTime.Now;
+            var mdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             if (mdaydiff.TotalMinutes >= 0 && mdaydiff.TotalMinutes <= 1)
             {
+                Console.WriteLine("m" + mdaydiff.TotalSeconds);
 
 
-                if ((int)Math.Floor(mdaydiff.TotalSeconds) == 1)
+                if ((int)Math.Floor(mdaydiff.TotalSeconds) < 1)
                 {
                     //Perform Winner Selection at the 0th second
 
                     try
                     {
-                        var businessWinnerId = await ChooseWinnerAsync("monthly", EntityTypes.Business);
-                        var monthlyLuckymeWinnerId = await ChooseWinnerAsync("monthly", EntityTypes.Luckyme);
+                        var businessWinnerIds = await ChooseWinnerAsync("monthly", EntityTypes.Business);
+                        var monthlyLuckymeWinnerIds = await ChooseWinnerAsync("monthly", EntityTypes.Luckyme);
 
-                        var selectedBusiness = await context.Businesses.FindAsync(businessWinnerId);
-                        var selectedmonthlyLuckyMe = await context.LuckyMes.FindAsync(monthlyLuckymeWinnerId);
+                        var selectedBusinesses = context.Businesses.Where(i => businessWinnerIds.Contains(i.Id));
+                        var selectedmonthlyLuckyMes = context.LuckyMes.Where(i => monthlyLuckymeWinnerIds.Contains(i.Id));
 
 
                         //Put a dummy daily luckyme 
@@ -225,64 +235,67 @@ namespace NtoboaFund.Services.HostedServices
                         DummyService.FixBusinessDummy();
 
 
-                        if (selectedBusiness != null)
+                        if (selectedBusinesses?.Count() > 0)
                         {
                             //send the selected scholarship to the UI
-                            await WinnerSelectionHub.Clients.All.SendAsync("businessWinner", new BusinessParticipantDTO
+                            WinnerSelectionHub.Clients.All.SendAsync("businessWinner", selectedBusinesses.Select(i => new BusinessParticipantDTO
                             {
-                                Id = selectedBusiness.Id,
-                                UserName = selectedBusiness.User.FirstName + " " + selectedBusiness.User.LastName,
-                                UserId = selectedBusiness.UserId,
-                                AmountStaked = selectedBusiness.Amount.ToString(),
-                                AmountToWin = selectedBusiness.AmountToWin.ToString(),
-                                Status = selectedBusiness.Status
-                            });
+                                Id = i.Id,
+                                UserName = i.User.FirstName + " " + i.User.LastName,
+                                UserId = i.UserId,
+                                AmountStaked = i.Amount.ToString(),
+                                AmountToWin = i.AmountToWin.ToString(),
+                                Status = i.Status,
+                                DateDeclared = i.DateDeclared
+                            }));
                             //clear all current participants
-                            await StakersHub.Clients.All.SendAsync("getCurrentBusinessParticipants", DataHub.GetBusinessParticipants());
+                            StakersHub.Clients.All.SendAsync("getCurrentBusinessParticipants", DataHub.GetBusinessParticipants());
                         }
                         else
                         {
                             //send a blank winner
-                            await WinnerSelectionHub.Clients.All.SendAsync("businessWinner", new BusinessParticipantDTO
-                            {
-                                UserName = "No Participants",
-                                UserId = "",
-                                AmountStaked = "",
-                                AmountToWin = ""
-                            });
+                            await WinnerSelectionHub.Clients.All.SendAsync("businessWinner", new List<BusinessParticipantDTO>(){new BusinessParticipantDTO
+                        {
+                            UserName = "No Participants",
+                            UserId = "",
+                            AmountStaked = "",
+                            AmountToWin = ""
+                        } });
                         }
 
-                        if (selectedmonthlyLuckyMe != null)
+                        if (selectedmonthlyLuckyMes?.Count() > 0)
                         {
                             //send the selected scholarship to the UI
-                            await WinnerSelectionHub.Clients.All.SendAsync("monthlyLuckymeWinner", new LuckyMeParticipantDTO
+                            WinnerSelectionHub.Clients.All.SendAsync("monthlyLuckymeWinner", selectedmonthlyLuckyMes.Select(i => new LuckyMeParticipantDTO
                             {
-                                Id = selectedmonthlyLuckyMe.Id,
-                                UserName = selectedmonthlyLuckyMe.User.FirstName + " " + selectedmonthlyLuckyMe.User.LastName,
-                                UserId = selectedmonthlyLuckyMe.UserId,
-                                AmountStaked = selectedmonthlyLuckyMe.Amount.ToString(),
-                                AmountToWin = selectedmonthlyLuckyMe.AmountToWin.ToString(),
-                                Status = selectedmonthlyLuckyMe.Status
-                            });
+                                Id = i.Id,
+                                UserName = i.User.FirstName + " " + i.User.LastName,
+                                UserId = i.UserId,
+                                AmountStaked = i.Amount.ToString(),
+                                AmountToWin = i.AmountToWin.ToString(),
+                                Status = i.Status,
+                                DateDeclared = i.DateDeclared
+                            }));
                             //clear all current participants
-                            await StakersHub.Clients.All.SendAsync("getCurrentMonthlyLuckymeParticipants", DataHub.GetMonthlyLuckymeParticipants());
+                            StakersHub.Clients.All.SendAsync("getCurrentMonthlyLuckymeParticipants", DataHub.GetMonthlyLuckymeParticipants());
                         }
                         else
                         {
                             //send a blank winner
-                            await WinnerSelectionHub.Clients.All.SendAsync("monthlyLuckymeWinner", new LuckyMeParticipantDTO
-                            {
-                                UserName = "No Participants",
-                                UserId = "",
-                                AmountStaked = "",
-                                AmountToWin = ""
-                            });
+                            await WinnerSelectionHub.Clients.All.SendAsync("monthlyLuckymeWinner", new List<LuckyMeParticipantDTO>(){new LuckyMeParticipantDTO
+                        {
+                            UserName = "No Participants",
+                            UserId = "",
+                            AmountStaked = "",
+                            AmountToWin = ""
+                        } });
                         }
 
-                        
 
-                        await WinnerSelectionHub.Clients.All.SendAsync("ongoingMonthlyDraw", false);
-                        await WinnerSelectionHub.Clients.All.SendAsync("ongoingMonthlyDraw", false);
+
+
+                        WinnerSelectionHub.Clients.All.SendAsync("ongoingMonthlyDraw", false);
+                        WinnerSelectionHub.Clients.All.SendAsync("ongoingMonthlyDraw", false);
 
                     }
                     catch (Exception ex)
@@ -309,65 +322,70 @@ namespace NtoboaFund.Services.HostedServices
 
         public async Task chooseQuaterlyWinner(object obj)
         {
-            var qdaydiff = DateTime.Now.NextQuater(18, 0, 0, 0) - DateTime.Now;
-            //var qdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            // var qdaydiff = DateTime.Now.NextQuater(18, 0, 0, 0) - DateTime.Now;
+            var qdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             //Drawing Takes a maximum of two minutes
             if (qdaydiff.TotalMinutes >= 0 && qdaydiff.TotalMinutes <= 1)
             {
+                Console.WriteLine("q" + qdaydiff.TotalSeconds);
 
-                if ((int)Math.Floor(qdaydiff.TotalSeconds) == 1)
+                if ((int)Math.Floor(qdaydiff.TotalSeconds) < 1)
                 {
                     //stop ongoingQuaterlyDraw
                     //Get current scholarship winner Id
-                    var winnerId = await ChooseWinnerAsync("quaterly", EntityTypes.Scholarship);
+                    var winnerIds = await ChooseWinnerAsync("quaterly", EntityTypes.Scholarship);
                     //Get the winning scholarship object
-                    var selectedScholarship = await context.Scholarships.FindAsync(winnerId);
+                    var selectedScholarships = context.Scholarships.Where(i => winnerIds.Contains(i.Id));
+
 
                     //Put a dummy Scholarship Stake
                     DummyService.FixScholarshipDummy();
 
-                    if (selectedScholarship != null)
+                    if (selectedScholarships?.Count() > 0)
                     {
                         //send the selected scholarship to the UI
-                        await WinnerSelectionHub.Clients.All.SendAsync("scholarshipWinner", new ScholarshipParticipantDTO
+                        WinnerSelectionHub.Clients.All.SendAsync("scholarshipWinner", selectedScholarships.Select(i => new ScholarshipParticipantDTO
                         {
-                            Id = selectedScholarship.Id,
-                            UserName = selectedScholarship.User.FirstName + " " + selectedScholarship.User.LastName,
-                            UserId = selectedScholarship.UserId,
-                            AmountStaked = selectedScholarship.Amount.ToString(),
-                            AmountToWin = selectedScholarship.AmountToWin.ToString(),
-                            Status = selectedScholarship.Status
-                        });
+                            Id = i.Id,
+                            UserName = i.User.FirstName + " " + i.User.LastName,
+                            UserId = i.UserId,
+                            AmountStaked = i.Amount.ToString(),
+                            AmountToWin = i.AmountToWin.ToString(),
+                            Status = i.Status,
+                            DateDeclared = i.DateDeclared
+                        }));
                         //clear all current participants
-                        await StakersHub.Clients.All.SendAsync("getCurrentScholarshipParticipants", DataHub.GetScholarshipParticipants());
+                        StakersHub.Clients.All.SendAsync("getCurrentScholarshipParticipants", DataHub.GetScholarshipParticipants());
                     }
                     else
                     {
                         //send a blank winner
-                        await WinnerSelectionHub.Clients.All.SendAsync("scholarshipWinner", new ScholarshipParticipantDTO
+                        WinnerSelectionHub.Clients.All.SendAsync("scholarshipWinner", new List<ScholarshipParticipantDTO>(){new ScholarshipParticipantDTO
                         {
                             UserName = "No Participants",
                             UserId = "",
                             AmountStaked = "",
                             AmountToWin = ""
-                        });
+                        } });
                     }
 
-                   
-                    await WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", false);
-                    await WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", false);
+
+
+
+                    WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", false);
+                    WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", false);
 
                 }
                 else if ((int)Math.Floor(qdaydiff.TotalSeconds) > 1)
-                    await WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", true);
+                    WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", true);
             }
             else
             {
                 //Make sure the countdown does not run to negatives
                 if (qdaydiff.TotalSeconds >= 0)
                 {
-                    //subtract the 2minutes draw time from the countdown time
+                    //subtract the 1minutes draw time from the countdown time
                     await CountdownHub.Clients.All.SendAsync("getQuaterlyTime", qdaydiff.Days, qdaydiff.Hours, qdaydiff.Add(TimeSpan.FromMinutes(-1)).Minutes, qdaydiff.Seconds);
 
                 }
@@ -381,15 +399,15 @@ namespace NtoboaFund.Services.HostedServices
         /// </summary>
         /// <param name="_selectedPeriod"></param>
         /// <returns></returns>
-        public async Task<int?> ChooseWinnerAsync(string _selectedPeriod, EntityTypes entityType)                          
+        public async Task<List<int?>> ChooseWinnerAsync(string _selectedPeriod, EntityTypes entityType)
         {
             string selectedPeriod = _selectedPeriod.ToLower();
-            int? selectedWinnerId = null;
+            List<int?> selectedWinnersId = null;
             if (String.IsNullOrEmpty(selectedPeriod))
             {
                 return null;
             }
-            
+
             if (_selectedPeriod == "daily")
             {
                 //If The CurrentHours is not 6 O'clock dont run the algorithm
@@ -407,8 +425,8 @@ namespace NtoboaFund.Services.HostedServices
                 var EligibleLuckyMeWinners = context.LuckyMes.Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins") && i.Period.ToLower() == selectedPeriod).Include("User");
 
                 //Run the Draw to choose a winner
-                selectedWinnerId = await RunLuckyMeAlgorithm(EligibleLuckyMeWinners);
-                
+                selectedWinnersId = RunLuckyMeAlgorithm(EligibleLuckyMeWinners);
+
                 //context.LuckyMes.Add(new LuckyMe)
             }
             else if (_selectedPeriod == "weekly")
@@ -428,7 +446,7 @@ namespace NtoboaFund.Services.HostedServices
                     ////Get the Current Users who are eligible for a draw
                     var EligibleLuckyMeWinners = context.LuckyMes.Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins") && i.Period.ToLower() == selectedPeriod).Include("User");
 
-                    selectedWinnerId = await RunLuckyMeAlgorithm(EligibleLuckyMeWinners);
+                    selectedWinnersId = RunLuckyMeAlgorithm(EligibleLuckyMeWinners);
                 }
 
             }
@@ -447,12 +465,12 @@ namespace NtoboaFund.Services.HostedServices
                 if (entityType == EntityTypes.Luckyme)
                 {
                     var EligibleLuckyMeWinners = context.LuckyMes.Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins") && i.Period.ToLower() == selectedPeriod).Include("User");
-                    selectedWinnerId = await RunLuckyMeAlgorithm(EligibleLuckyMeWinners);
+                    selectedWinnersId = RunLuckyMeAlgorithm(EligibleLuckyMeWinners);
                 }
                 else if (entityType == EntityTypes.Business)
                 {
                     var EligibleBusinessWinners = context.Businesses.Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins") && i.Period.ToLower() == selectedPeriod).Include("User");
-                    selectedWinnerId = await RunBusinessAlgorithm(EligibleBusinessWinners);
+                    selectedWinnersId = RunBusinessAlgorithm(EligibleBusinessWinners);
                 }
 
             }
@@ -460,13 +478,13 @@ namespace NtoboaFund.Services.HostedServices
             {
                 var eligibleScholarshipWinners = context.Scholarships.Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins") && i.Period.ToLower() == selectedPeriod/*&& Convert.ToDateTime(i.Date) >= threeMonthsAgo*/).Include("User");
 
-                selectedWinnerId = await RunScholarshipAlgorithm(eligibleScholarshipWinners);
+                selectedWinnersId = RunScholarshipAlgorithm(eligibleScholarshipWinners);
 
             }
 
             context.SaveChanges();
 
-            return selectedWinnerId;
+            return selectedWinnersId;
         }
 
 
@@ -475,66 +493,82 @@ namespace NtoboaFund.Services.HostedServices
         /// </summary>
         /// <param name="eligibleLuckyMeWinners"></param>
         /// <returns></returns>
-        public async Task<int?> RunLuckyMeAlgorithm(IEnumerable<LuckyMe> eligibleLuckyMeWinners)
+        public List<int?> RunLuckyMeAlgorithm(IEnumerable<LuckyMe> eligibleLuckyMeWinners)
         {
 
             if (eligibleLuckyMeWinners == null || eligibleLuckyMeWinners.Count() < 1) return null;
             //Repeat the luckyme's occurance in the selection list based on the amount staked.
             //The Selection List contains Id's of hte Lucky Me;
             List<int> SelectionList = new List<int>();
-            
+
 
             //Get the stakes that are not from dummy users
-            var originalStakers = eligibleLuckyMeWinners.Where(i=>i.User.UserType !=2);
-            var totalOriginalAmount = originalStakers.Sum(i=>i.AmountToWin);
+            var originalStakers = eligibleLuckyMeWinners.Where(i => i.User.UserType != 2);
+            var totalOriginalAmount = originalStakers.Sum(i => i.AmountToWin);
 
 
-            var fixedWinner = eligibleLuckyMeWinners.Where(i=>i.Status.ToLower() == "wins").FirstOrDefault();
+            var fixedWinners = eligibleLuckyMeWinners.Where(i => i.Status.ToLower() == "wins");
 
-            if(fixedWinner!=null)
-                SelectionList.Add(fixedWinner.Id);
+            if (fixedWinners.Count() > 0)
+                SelectionList.AddRange(fixedWinners.Select(i => i.Id));
 
-            if (fixedWinner == null)
+
+            foreach (var item in eligibleLuckyMeWinners)
             {
-                foreach (var item in eligibleLuckyMeWinners)
-                {
-                    //If any item has a status of wins.. put only that item in the list
-                    //if (item.Status == "wins")
-                    //{
-                    //    SelectionList.Clear();
-                    //    SelectionList.Add(item.Id);
-                    //    break;
-                    //}
+                //If any item has a status of wins.. put only that item in the list
+                //if (item.Status == "wins")
+                //{
+                //    SelectionList.Clear();
+                //    SelectionList.Add(item.Id);
+                //    break;
+                //}
 
-                    if (item.User.UserType != 2 && item.AmountToWin > ((Settings.WinnerTreshold) * totalOriginalAmount))
-                    {
-                        continue;
-                    }
-                    //Divide staked amount by possible stake amount
-                    //This is for assigning winning probabilities to users with higher stake amount
-                    //var flooredAmount = item.Amount / Settings.LuckyMeStakes[0];
-                    //for (var i = flooredAmount; i > 0; i--)
-                    //{
-                    SelectionList.Add(item.Id);
-                    //  }
+                if (item.User.UserType != 2 && item.AmountToWin > ((Settings.WinnerTreshold) * totalOriginalAmount))
+                {
+                    continue;
                 }
+                //Divide staked amount by possible stake amount
+                //This is for assigning winning probabilities to users with higher stake amount
+                //var flooredAmount = item.Amount / Settings.LuckyMeStakes[0];
+                //for (var i = flooredAmount; i > 0; i--)
+                //{
+                SelectionList.Add(item.Id);
+                //  }
             }
-            
+
 
             //Choose a winner randomly
             //Get the list length
             int selectionListLength = SelectionList.Count;
-            //choose a random index between 0 and the list count inclusive
-            if (selectionListLength < 1) return null;
+            List<int?> WinnerIds = new List<int?>();
 
-            int selectedWinnerIndex = new Random().Next(0, selectionListLength - 1);
-            //get selected Id;
-            int winnerId = SelectionList[selectedWinnerIndex];
+            //choose a random index between 0 and the list count inclusive
+            if (selectionListLength > 0)
+            {
+
+
+                //Get count of potential winners
+                var winnersCounts = DataHub.GetWinnersCount(eligibleLuckyMeWinners.Count());
+
+                //Iterate over the potential winner indices in the selection list
+                for (int i = 0; i < winnersCounts; i++)
+                {
+                    selectionListLength = SelectionList.Count;
+                    if (selectionListLength < 1) break;
+                    //Get the random winner
+                    int selectedWinnerIndex = new Random().Next(0, selectionListLength - 1);
+                    //Add the winner's Id to the List
+                    WinnerIds.Add(SelectionList[selectedWinnerIndex]);
+                    //Remove the winner from the list
+                    SelectionList.RemoveAt(selectedWinnerIndex);
+                }
+            }
+
             //Set Winner and set Loosers
             foreach (var item in eligibleLuckyMeWinners)
             {
                 item.DateDeclared = DateTime.Now.ToLongDateString();
-                if (item.Id == winnerId)
+                if (WinnerIds.Contains(item.Id))
                 {
                     item.Status = "won";
 
@@ -542,12 +576,13 @@ namespace NtoboaFund.Services.HostedServices
                     try
                     {
                         var user = context.Users.Where(u => u.Id == item.UserId).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
-                        if (user.PreferedMoneyReceptionMethod == "momo")
-                        {
-                            //I'll come back to this..
-                            // PaymentService.MomoTransfer(user, item.AmountToWin, "luckyme");
-                            await MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Winner", $"Dear {user.FirstName} {user.LastName}, your {item.Period} ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your Mobile Money Account");
-                        }
+
+                        //I'll come back to this..
+                        // PaymentService.MomoTransfer(user, item.AmountToWin, "luckyme");
+                        MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Winner", $"Congratulations {user.FirstName} {user.LastName}, your {item.Period} ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your {user.PreferedMoneyReceptionMethod}");
+
+                        MessagingService.SendSms(user.PhoneNumber, $"Congratulations {user.FirstName} {user.LastName}, your {item.Period} Luckyme ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your {user.PreferedMoneyReceptionMethod}");
+
                     }
                     catch
                     {
@@ -561,7 +596,7 @@ namespace NtoboaFund.Services.HostedServices
                 context.Entry(item).State = EntityState.Modified;
             }
 
-            return winnerId;
+            return WinnerIds;
         }
 
         /// <summary>
@@ -569,7 +604,7 @@ namespace NtoboaFund.Services.HostedServices
         /// </summary>
         /// <param name="eligibleScholarshipWinners"></param>
         /// <returns></returns>
-        public async Task<int?> RunScholarshipAlgorithm(IEnumerable<Scholarship> eligibleScholarshipWinners)
+        public List<int?> RunScholarshipAlgorithm(IEnumerable<Scholarship> eligibleScholarshipWinners)
         {
 
             if (eligibleScholarshipWinners == null || eligibleScholarshipWinners.Count() < 1) return null;
@@ -581,14 +616,14 @@ namespace NtoboaFund.Services.HostedServices
             var originalStakers = eligibleScholarshipWinners.Where(i => i.User.UserType != 2);
             var totalOriginalAmount = originalStakers.Sum(i => i.AmountToWin);
 
-            var fixedWinner = eligibleScholarshipWinners.Where(i => i.Status.ToLower() == "wins").FirstOrDefault();
+            var fixedWinners = eligibleScholarshipWinners.Where(i => i.Status.ToLower() == "wins");
 
-            if (fixedWinner != null)
-                SelectionList.Add(fixedWinner.Id);
+            //Add Fixed Winners to th slectionlist
+            if (fixedWinners.Count() > 0)
+                SelectionList.AddRange(fixedWinners.Select(i => i.Id));
 
-            if (fixedWinner == null)
-            {
-                foreach (var item in eligibleScholarshipWinners)
+            //proceed to add eligible original winners to the selectionlist
+            foreach (var item in eligibleScholarshipWinners)
             {
 
                 //If any item has a status of wins.. put only that item in the list
@@ -611,22 +646,38 @@ namespace NtoboaFund.Services.HostedServices
                 SelectionList.Add(item.Id);
                 //}
             }
-            }
+
 
             //Choose a winner randomly
             //Get the list length
             int selectionListLength = SelectionList.Count;
             //choose a random index between 0 and the list count inclusive
-            if (selectionListLength < 1) return null;
+            List<int?> WinnerIds = new List<int?>();
+            if (selectionListLength > 0)
+            {
 
-            int selectedWinnerIndex = new Random().Next(0, selectionListLength - 1);
-            //get selected Id;
-            int winnerId = SelectionList[selectedWinnerIndex];
+                //Get count of winners
+                var winnersCounts = DataHub.GetWinnersCount(eligibleScholarshipWinners.Count());
+
+                //Iterate over the potential winner indices in the selection list
+                for (int i = 0; i < winnersCounts; i++)
+                {
+                    selectionListLength = SelectionList.Count;
+                    if (selectionListLength < 1) break;
+                    //Get the random winner
+                    int selectedWinnerIndex = new Random().Next(0, selectionListLength - 1);
+                    //Add the winner's Id to the List
+                    WinnerIds.Add(SelectionList[selectedWinnerIndex]);
+                    //Remove the winner from the list
+                    SelectionList.RemoveAt(selectedWinnerIndex);
+                }
+
+            }
             //Set Winner and set Loosers
             foreach (var item in eligibleScholarshipWinners)
             {
                 item.DateDeclared = DateTime.Now.ToLongDateString();
-                if (item.Id == winnerId)
+                if (WinnerIds.Contains(item.Id))
                 {
                     item.Status = "won";
                     var user = context.Users.Where(u => u.Id == item.UserId).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
@@ -635,9 +686,11 @@ namespace NtoboaFund.Services.HostedServices
                     {
                         if (user.PreferedMoneyReceptionMethod == "momo")
                         {
-                            PaymentService.MomoTransfer(user, item.AmountToWin, "Scholarship");
-                           await MessagingService.SendMail($"{user.FirstName} {user.LastName}",user.Email, "Ntofund Winner", $"Dear {user.FirstName} {user.LastName}, your Scholarhip ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your Mobile Money Account");
+                            //PaymentService.MomoTransfer(user, item.AmountToWin, "Scholarship");
                         }
+                        MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Winner", $"Congratulations {user.FirstName} {user.LastName}, your Scholarship ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your {user.PreferedMoneyReceptionMethod}");
+
+                        MessagingService.SendSms(user.PhoneNumber, $"Congratulations {user.FirstName} {user.LastName}, your Scholarship ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your {user.PreferedMoneyReceptionMethod}");
                         //await StakersHub.Clients.All.SendAsync("addscholarshipwinner", new ScholarshipParticipantDTO[]{
                         //    new ScholarshipParticipantDTO
                         //    {
@@ -659,10 +712,12 @@ namespace NtoboaFund.Services.HostedServices
                 item.Status = "lost";
 
             }
-            return winnerId;
+
+            return WinnerIds;
         }
 
-        public async Task<int?> RunBusinessAlgorithm(IEnumerable<Business> eligibleBusinessWinners)
+
+        public List<int?> RunBusinessAlgorithm(IEnumerable<Business> eligibleBusinessWinners)
         {
 
             if (eligibleBusinessWinners == null || eligibleBusinessWinners.Count() < 1) return null;
@@ -674,14 +729,14 @@ namespace NtoboaFund.Services.HostedServices
             var originalStakers = eligibleBusinessWinners.Where(i => i.User.UserType != 2);
             var totalOriginalAmount = originalStakers.Sum(i => i.AmountToWin);
 
-            var fixedWinner = eligibleBusinessWinners.Where(i => i.Status.ToLower() == "wins").FirstOrDefault();
+            var fixedWinners = eligibleBusinessWinners.Where(i => i.Status.ToLower() == "wins");
 
-            if (fixedWinner != null)
-                SelectionList.Add(fixedWinner.Id);
+            //Add fixed winner to the selection list
+            if (fixedWinners.Count() > 0)
+                SelectionList.AddRange(fixedWinners.Select(i => i.Id));
 
-            if (fixedWinner == null)
-            {
-                foreach (var item in eligibleBusinessWinners)
+            //Add Eligible original winners to the selection list
+            foreach (var item in eligibleBusinessWinners)
             {
                 //If any item has a status of wins.. put only that item in the list
                 //if (item.Status == "wins")
@@ -703,22 +758,36 @@ namespace NtoboaFund.Services.HostedServices
                 SelectionList.Add(item.Id);
                 //}
             }
-            }
+
 
             //Choose a winner randomly
             //Get the list length
             int selectionListLength = SelectionList.Count;
             //choose a random index between 0 and the list count inclusive
-            if (selectionListLength < 1) return null;
+            List<int?> WinnerIds = new List<int?>();
+            if (selectionListLength > 0)
+            {
+                //Get count of winners
+                var winnersCounts = DataHub.GetWinnersCount(eligibleBusinessWinners.Count());
 
-            int selectedWinnerIndex = new Random().Next(0, selectionListLength - 1);
-            //get selected Id;
-            int winnerId = SelectionList[selectedWinnerIndex];
+                //Iterate over the potential winner indices in the selection list
+                for (int i = 0; i < winnersCounts; i++)
+                {
+                    selectionListLength = SelectionList.Count;
+                    if (selectionListLength < 1) break;
+                    //Get the random winner
+                    int selectedWinnerIndex = new Random().Next(0, selectionListLength - 1);
+                    //Add the winner's Id to the List
+                    WinnerIds.Add(SelectionList[selectedWinnerIndex]);
+                    //Remove the winner from the list
+                    SelectionList.RemoveAt(selectedWinnerIndex);
+                }
+            }
             //Set Winner and set Loosers
             foreach (var item in eligibleBusinessWinners)
             {
                 item.DateDeclared = DateTime.Now.ToLongDateString();
-                if (item.Id == winnerId)
+                if (WinnerIds.Contains(item.Id))
                 {
                     item.Status = "won";
                     var user = context.Users.Where(u => u.Id == item.UserId).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
@@ -727,9 +796,11 @@ namespace NtoboaFund.Services.HostedServices
                     {
                         if (user.PreferedMoneyReceptionMethod == "momo")
                         {
-                            PaymentService.MomoTransfer(user, item.AmountToWin, "luckyme");
-                            await MessagingService.SendMail("{user.FirstName} {user.LastName}",user.Email, "Ntoboafund Winner", $"Dear {user.FirstName} {user.LastName}, your Business ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your Mobile Money Account");
+                            //PaymentService.MomoTransfer(user, item.AmountToWin, "luckyme");
                         }
+                        MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Winner", $"Congratulations {user.FirstName} {user.LastName}, your Business ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your {user.PreferedMoneyReceptionMethod}");
+
+                        MessagingService.SendSms(user.PhoneNumber, $"Congratulations {user.FirstName} {user.LastName}, your Business ntoboa of {item.Amount} on {item.Date} has yielded an amount of {item.AmountToWin} which would be paid directly into your {user.PreferedMoneyReceptionMethod}");
                         //await StakersHub.Clients.All.SendAsync("addscholarshipwinner", new ScholarshipParticipantDTO[]{
                         //    new ScholarshipParticipantDTO
                         //    {
@@ -751,7 +822,8 @@ namespace NtoboaFund.Services.HostedServices
                 item.Status = "lost";
 
             }
-            return winnerId;
+
+            return WinnerIds;
         }
 
 
@@ -778,7 +850,9 @@ namespace NtoboaFund.Services.HostedServices
 
 
 
-         
+
+
+
 
     }
 
@@ -869,9 +943,6 @@ namespace NtoboaFund.Services.HostedServices
         }
 
 
-
-
-
         public Task StopAsync(CancellationToken cancellationToken)
         {
 
@@ -882,7 +953,6 @@ namespace NtoboaFund.Services.HostedServices
 
         public void Dispose()
         {
-            // _timer?.Dispose();
             _timer1?.Dispose();
             _timer2?.Dispose();
             _timer3?.Dispose();

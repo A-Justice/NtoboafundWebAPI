@@ -13,13 +13,13 @@ cursor: pointer; background-color: #1e9669;
         </div>
         <div class="box" style="box-shadow: 0 0 1px rgba(0,0,0,0.2); -webkit-box-shadow: 0 0 1px rgba(0,0,0,0.2); margin: 2rem; border: 1px solid grey;">
             <div class="top" style="height: 10rem; display: flex; justify-content: center; align-items: center; background-color: #23b67f;">
-                <img src="https://ntoboafund.herokuapp.com/assets/images/logo.png" alt="" style="height: 5rem;">
+                <img src="https://ntoboafund.com/assets/images/logo.png" alt="" style="height: 5rem;">
             </div>
             <div class="bottom" style="background-color: #ffffff; color: black; padding: 2rem;" align="center">
                 <div class="thankyou" style="font-size: 1.6rem; padding: 1rem;">Thank You For Registering</div>
                 <div class="thankyoutext"></div>
                 <div class="thankyouaction">
-                    <a target="_blank" href="https://ntoboafund.herokuapp.com" class="btn" style="background-color: #23b67f; color: white; font-size: 1.4rem; border-radius: .3rem; text-decoration: none; display: inline-block; margin: 1rem 2rem; padding: .5rem; border: none;">Go To WebSite</a>
+                    <a target="_blank" href="https://ntoboafund.com" class="btn" style="background-color: #23b67f; color: white; font-size: 1.4rem; border-radius: .3rem; text-decoration: none; display: inline-block; margin: 1rem 2rem; padding: .5rem; border: none;">Go To WebSite</a>
                 </div>
             </div>
         </div>

@@ -17,10 +17,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NtoboaFund
 {
+    //When Switch between production and test
+    //Change Connection String
+    //change currentsettings in RaveApiSettingsDTO
+    //change Draw Time
+
+    /// <summary>
+    /// 
+    /// </summary>
     public class Startup
     {
         public Startup(IConfiguration configuration)
@@ -38,7 +45,7 @@ namespace NtoboaFund
             //GearHost
             //DefaultConnectiona
             //Azure
-            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Azure"), i => i.EnableRetryOnFailure()));
+            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"), i => i.EnableRetryOnFailure()));
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("Personal");
@@ -105,7 +112,7 @@ namespace NtoboaFund
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public async void Configure(IApplicationBuilder app, IHostingEnvironment env,NtoboaFundDbContext dbContext, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+        public async void Configure(IApplicationBuilder app, IHostingEnvironment env, NtoboaFundDbContext dbContext, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             app.UseCors("NtuboaDefault");
             if (env.IsDevelopment())
@@ -141,8 +148,8 @@ namespace NtoboaFund
 
             app.UseMvc();
 
-             CreateDefaultUserBuilder(dbContext);
-             CreateUserRoles(userManager, roleManager);
+            CreateDefaultUserBuilder(dbContext);
+            CreateUserRoles(userManager, roleManager);
         }
 
         private static void CreateUserRoles(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
@@ -189,7 +196,8 @@ namespace NtoboaFund
 
         private static void CreateDefaultUserBuilder(NtoboaFundDbContext dbContext)
         {
-            if(dbContext.UserBuilders.All(i=>i.FirstName != "Abraham")){
+            if (dbContext.UserBuilders.All(i => i.FirstName != "Abraham"))
+            {
                 var userBuilders = new List<UserBuilder>
                 {
                     new UserBuilder
@@ -322,7 +330,7 @@ namespace NtoboaFund
                         FirstName = "Fuseini",
                         LastName  = "Mamba"
                     }
-                    
+
                 };
                 dbContext.UserBuilders.AddRange(userBuilders);
                 dbContext.SaveChanges();

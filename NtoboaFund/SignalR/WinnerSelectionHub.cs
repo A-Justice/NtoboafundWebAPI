@@ -26,7 +26,8 @@ namespace NtoboaFund.SignalR
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString(),
                 AmountToWin = i.AmountToWin.ToString(),
-                Status = i.Status
+                Status = i.Status,
+                DateDeclared = i.DateDeclared
 
             });
             await Clients.Caller.SendAsync("getCurrentScholarshipWinners", scholarshipParticipants.ToList());
@@ -41,7 +42,8 @@ namespace NtoboaFund.SignalR
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString(),
                 AmountToWin = i.AmountToWin.ToString(),
-                Status = i.Status
+                Status = i.Status,
+                DateDeclared = i.DateDeclared
 
             });
             await Clients.Caller.SendAsync("getCurrentBusinessWinners", scholarshipParticipants.ToList());
@@ -58,6 +60,8 @@ namespace NtoboaFund.SignalR
                 AmountStaked = i.Amount.ToString(),
                 AmountToWin = i.AmountToWin.ToString(),
                 Status = i.Status
+                ,
+                DateDeclared = i.DateDeclared
 
             });
             await Clients.Caller.SendAsync("getCurrentMonthlyLuckymeWinners", monthlyLuckymeWinners.ToList());
@@ -72,7 +76,8 @@ namespace NtoboaFund.SignalR
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString(),
                 AmountToWin = i.AmountToWin.ToString(),
-                Status = i.Status
+                Status = i.Status,
+                DateDeclared = i.DateDeclared
 
             });
             await Clients.Caller.SendAsync("getCurrentWeeklyLuckymeWinners", weeklyLuckymeWinners.ToList());
@@ -87,7 +92,8 @@ namespace NtoboaFund.SignalR
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString(),
                 AmountToWin = i.AmountToWin.ToString(),
-                Status = i.Status
+                Status = i.Status,
+                DateDeclared = i.DateDeclared
 
             });
             await Clients.Caller.SendAsync("getCurrentDailyLuckymeWinners", dailyLuckymeWinners.ToList());
