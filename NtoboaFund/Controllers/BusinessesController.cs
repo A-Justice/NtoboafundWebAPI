@@ -134,7 +134,7 @@ namespace NtoboaFund.Controllers
             }
 
             business.Date = DateTime.Now.ToLongDateString();
-            business.AmountToWin = (business.Amount * Settings.BusinessStakeOdds);
+            business.AmountToWin = (business.Amount * Constants.BusinessStakeOdds);
             business.Status = "Pending";
             business.Period = "monthly";
             business.User = dbContext.Users.Find(business.UserId);

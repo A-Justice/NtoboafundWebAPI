@@ -22,14 +22,14 @@ namespace NtoboaFund.Services
             {
 
                 case EntityTypes.Luckyme:
-                    var lstakeAmounts = Settings.LuckyMeStakes;
+                    var lstakeAmounts = Constants.LuckyMeStakes;
                     return lstakeAmounts[r.Next(0, lstakeAmounts.Length - 1)];
                     break;
                 case EntityTypes.Business:
-                    var bstakeAmounts = Settings.BusinessStakes;
+                    var bstakeAmounts = Constants.BusinessStakes;
                     return bstakeAmounts[r.Next(0, bstakeAmounts.Length - 1)];
                 case EntityTypes.Scholarship:
-                    var sstakeAmounts = Settings.ScholarshipStakes;
+                    var sstakeAmounts = Constants.ScholarshipStakes;
                     return sstakeAmounts[r.Next(0, sstakeAmounts.Length - 1)];
                 default:
                     return 0;
@@ -64,7 +64,7 @@ namespace NtoboaFund.Services
                     if (isUserParticipating(dummyUser))
                         continue;
 
-                    if (dummyUser.LuckyMes.All(i => Convert.ToDateTime(i.DateDeclared) < (DateTime.Now - TimeSpan.FromDays(Settings.DaysForDummyToRepeat))))
+                    if (dummyUser.LuckyMes.All(i => Convert.ToDateTime(i.DateDeclared) < (DateTime.Now - TimeSpan.FromDays(Constants.DaysForDummyToRepeat))))
                     {
                         return (dummyUser, false);
                     }
@@ -78,7 +78,7 @@ namespace NtoboaFund.Services
                     if (isUserParticipating(dummyUser))
                         continue;
 
-                    if (dummyUser.Scholarships.All(i => Convert.ToDateTime(i.DateDeclared) < (DateTime.Now - TimeSpan.FromDays(Settings.DaysForDummyToRepeat))))
+                    if (dummyUser.Scholarships.All(i => Convert.ToDateTime(i.DateDeclared) < (DateTime.Now - TimeSpan.FromDays(Constants.DaysForDummyToRepeat))))
                     {
                         return (dummyUser, false);
                     }
@@ -92,7 +92,7 @@ namespace NtoboaFund.Services
                     if (isUserParticipating(dummyUser))
                         continue;
 
-                    if (dummyUser.Businesses.All(i => Convert.ToDateTime(i.DateDeclared) < (DateTime.Now - TimeSpan.FromDays(Settings.DaysForDummyToRepeat))))
+                    if (dummyUser.Businesses.All(i => Convert.ToDateTime(i.DateDeclared) < (DateTime.Now - TimeSpan.FromDays(Constants.DaysForDummyToRepeat))))
                     {
                         return (dummyUser, false);
                     }
@@ -133,7 +133,7 @@ namespace NtoboaFund.Services
                 Date = DateTime.Now.ToLongDateString(),
                 Period = "daily",
                 Status = "paid",
-                AmountToWin = Settings.LuckymeStakeOdds * damount
+                AmountToWin = Constants.LuckymeStakeOdds * damount
             };
             context.LuckyMes.Add(luckyme);
             context.SaveChanges();
@@ -155,7 +155,7 @@ namespace NtoboaFund.Services
                 Date = DateTime.Now.ToLongDateString(),
                 Period = "monthly",
                 Status = "paid",
-                AmountToWin = Settings.LuckymeStakeOdds * mamount
+                AmountToWin = Constants.LuckymeStakeOdds * mamount
             };
             context.LuckyMes.Add(luckyme);
             context.SaveChanges();
@@ -176,7 +176,7 @@ namespace NtoboaFund.Services
                 Date = DateTime.Now.ToLongDateString(),
                 Period = "weekly",
                 Status = "paid",
-                AmountToWin = Settings.LuckymeStakeOdds * wamount
+                AmountToWin = Constants.LuckymeStakeOdds * wamount
             };
             context.LuckyMes.Add(luckyme);
             context.SaveChanges();
@@ -196,7 +196,7 @@ namespace NtoboaFund.Services
                 Date = DateTime.Now.ToLongDateString(),
                 Period = "quaterly",
                 Status = "paid",
-                AmountToWin = Settings.ScholarshipStakeOdds * amount,
+                AmountToWin = Constants.ScholarshipStakeOdds * amount,
                 Institution = "",
                 Program = "",
                 StudentId = ""
@@ -218,7 +218,7 @@ namespace NtoboaFund.Services
                 Date = DateTime.Now.ToLongDateString(),
                 Period = "monthly",
                 Status = "paid",
-                AmountToWin = Settings.BusinessStakeOdds * amount
+                AmountToWin = Constants.BusinessStakeOdds * amount
             };
             context.Businesses.Add(business);
             context.SaveChanges();

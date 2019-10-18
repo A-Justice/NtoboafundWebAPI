@@ -77,7 +77,7 @@ namespace NtoboaFund.Services
 
             var payload = new
             {
-                key = "",
+                key = AppSetting.MNotifySettings.ApiKey,
                 recipent = new string[] { phoneNumber },
                 sender = "Ntoboafund",
                 message = message,
@@ -93,7 +93,7 @@ namespace NtoboaFund.Services
                 HttpResponseMessage response = httpClient.PostAsync(url, new StringContent(payloadString)).Result;
 
             }
-            catch
+            catch (Exception ex)
             {
 
             }

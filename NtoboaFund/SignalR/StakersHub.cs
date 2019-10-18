@@ -531,7 +531,7 @@ namespace NtoboaFund.SignalR
             return (int)Math.Ceiling(participantsCount * WinnersCountPercentage);
         }
 
-        public void ManageDummies(EntityTypes entityType, Period? period)
+        public List<object> ManageDummies(EntityTypes entityType, Period? period)
         {
             int currentPotentialWinnersCount = GetCurrentPotentialWinnersCount(entityType, period);
 
@@ -539,28 +539,33 @@ namespace NtoboaFund.SignalR
 
             var dummyDifference = currentPotentialWinnersCount - currentDummiesCount;
 
+            //Object to hold the number of dummies inserted
+            List<object> dummyObjects = new List<object>();
+
             for (int i = 0; i < dummyDifference; i++)
             {
                 switch (entityType)
                 {
                     case EntityTypes.Luckyme:
                         if (period == Period.Daily)
-                            DummyService.FixLuckyMeDailyDummy();
+                            dummyObjects.Add(DummyService.FixLuckyMeDailyDummy());
                         if (period == Period.Weekly)
-                            DummyService.FixLuckyMeWeeklyDummy();
+                            dummyObjects.Add(DummyService.FixLuckyMeWeeklyDummy());
                         if (period == Period.Monthly)
-                            DummyService.FixLuckyMeMonthlyDummy();
+                            dummyObjects.Add(DummyService.FixLuckyMeMonthlyDummy());
                         break;
                     case EntityTypes.Business:
-                        DummyService.FixBusinessDummy();
+                        dummyObjects.Add(DummyService.FixBusinessDummy());
                         break;
                     case EntityTypes.Scholarship:
-                        DummyService.FixScholarshipDummy();
+                        dummyObjects.Add(DummyService.FixScholarshipDummy());
                         break;
                     default:
                         break;
                 }
             }
+
+            return dummyObjects;
         }
 
     }

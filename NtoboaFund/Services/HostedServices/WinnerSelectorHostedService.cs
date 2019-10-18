@@ -73,8 +73,8 @@ namespace NtoboaFund.Services.HostedServices
 
         public async Task chooseDailyWinner(object obj)
         {
-            //var ddaydiff = DateTime.Now.DailyStakeEndDate() - DateTime.Now;
-            var ddaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            var ddaydiff = DateTime.Now.DailyStakeEndDate() - DateTime.Now;
+            //var ddaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             if (ddaydiff.TotalMinutes >= 0 && ddaydiff.TotalMinutes <= 1)
             {
@@ -143,8 +143,8 @@ namespace NtoboaFund.Services.HostedServices
 
         public async Task chooseWeeklyWinner(object obj)
         {
-            // var wdaydiff = DateTime.Now.EndOfWeek(18, 0, 0, 0) - DateTime.Now;
-            var wdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            var wdaydiff = DateTime.Now.EndOfWeek(18, 0, 0, 0) - DateTime.Now;
+            //var wdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             if (wdaydiff.TotalMinutes >= 0 && wdaydiff.TotalMinutes <= 1)
             {
@@ -207,8 +207,8 @@ namespace NtoboaFund.Services.HostedServices
 
         public async Task chooseMonthlyWinner(object obj)
         {
-            //var mdaydiff = DateTime.Now.EndOfMonth(18, 0, 0, 0) - DateTime.Now;
-            var mdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            var mdaydiff = DateTime.Now.EndOfMonth(18, 0, 0, 0) - DateTime.Now;
+            //var mdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             if (mdaydiff.TotalMinutes >= 0 && mdaydiff.TotalMinutes <= 1)
             {
@@ -238,7 +238,7 @@ namespace NtoboaFund.Services.HostedServices
                         if (selectedBusinesses?.Count() > 0)
                         {
                             //send the selected scholarship to the UI
-                            WinnerSelectionHub.Clients.All.SendAsync("businessWinner", selectedBusinesses.Select(i => new BusinessParticipantDTO
+                            await WinnerSelectionHub.Clients.All.SendAsync("businessWinner", selectedBusinesses.Select(i => new BusinessParticipantDTO
                             {
                                 Id = i.Id,
                                 UserName = i.User.FirstName + " " + i.User.LastName,
@@ -249,7 +249,7 @@ namespace NtoboaFund.Services.HostedServices
                                 DateDeclared = i.DateDeclared
                             }));
                             //clear all current participants
-                            StakersHub.Clients.All.SendAsync("getCurrentBusinessParticipants", DataHub.GetBusinessParticipants());
+                            await StakersHub.Clients.All.SendAsync("getCurrentBusinessParticipants", DataHub.GetBusinessParticipants());
                         }
                         else
                         {
@@ -266,7 +266,7 @@ namespace NtoboaFund.Services.HostedServices
                         if (selectedmonthlyLuckyMes?.Count() > 0)
                         {
                             //send the selected scholarship to the UI
-                            WinnerSelectionHub.Clients.All.SendAsync("monthlyLuckymeWinner", selectedmonthlyLuckyMes.Select(i => new LuckyMeParticipantDTO
+                            await WinnerSelectionHub.Clients.All.SendAsync("monthlyLuckymeWinner", selectedmonthlyLuckyMes.Select(i => new LuckyMeParticipantDTO
                             {
                                 Id = i.Id,
                                 UserName = i.User.FirstName + " " + i.User.LastName,
@@ -277,7 +277,7 @@ namespace NtoboaFund.Services.HostedServices
                                 DateDeclared = i.DateDeclared
                             }));
                             //clear all current participants
-                            StakersHub.Clients.All.SendAsync("getCurrentMonthlyLuckymeParticipants", DataHub.GetMonthlyLuckymeParticipants());
+                            await StakersHub.Clients.All.SendAsync("getCurrentMonthlyLuckymeParticipants", DataHub.GetMonthlyLuckymeParticipants());
                         }
                         else
                         {
@@ -294,8 +294,8 @@ namespace NtoboaFund.Services.HostedServices
 
 
 
-                        WinnerSelectionHub.Clients.All.SendAsync("ongoingMonthlyDraw", false);
-                        WinnerSelectionHub.Clients.All.SendAsync("ongoingMonthlyDraw", false);
+                        await WinnerSelectionHub.Clients.All.SendAsync("ongoingMonthlyDraw", false);
+                        await WinnerSelectionHub.Clients.All.SendAsync("ongoingMonthlyDraw", false);
 
                     }
                     catch (Exception ex)
@@ -322,8 +322,8 @@ namespace NtoboaFund.Services.HostedServices
 
         public async Task chooseQuaterlyWinner(object obj)
         {
-            // var qdaydiff = DateTime.Now.NextQuater(18, 0, 0, 0) - DateTime.Now;
-            var qdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            var qdaydiff = DateTime.Now.NextQuater(18, 0, 0, 0) - DateTime.Now;
+            //var qdaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             //Drawing Takes a maximum of two minutes
             if (qdaydiff.TotalMinutes >= 0 && qdaydiff.TotalMinutes <= 1)
@@ -345,7 +345,7 @@ namespace NtoboaFund.Services.HostedServices
                     if (selectedScholarships?.Count() > 0)
                     {
                         //send the selected scholarship to the UI
-                        WinnerSelectionHub.Clients.All.SendAsync("scholarshipWinner", selectedScholarships.Select(i => new ScholarshipParticipantDTO
+                        await WinnerSelectionHub.Clients.All.SendAsync("scholarshipWinner", selectedScholarships.Select(i => new ScholarshipParticipantDTO
                         {
                             Id = i.Id,
                             UserName = i.User.FirstName + " " + i.User.LastName,
@@ -356,12 +356,12 @@ namespace NtoboaFund.Services.HostedServices
                             DateDeclared = i.DateDeclared
                         }));
                         //clear all current participants
-                        StakersHub.Clients.All.SendAsync("getCurrentScholarshipParticipants", DataHub.GetScholarshipParticipants());
+                        await StakersHub.Clients.All.SendAsync("getCurrentScholarshipParticipants", DataHub.GetScholarshipParticipants());
                     }
                     else
                     {
                         //send a blank winner
-                        WinnerSelectionHub.Clients.All.SendAsync("scholarshipWinner", new List<ScholarshipParticipantDTO>(){new ScholarshipParticipantDTO
+                        await WinnerSelectionHub.Clients.All.SendAsync("scholarshipWinner", new List<ScholarshipParticipantDTO>(){new ScholarshipParticipantDTO
                         {
                             UserName = "No Participants",
                             UserId = "",
@@ -373,12 +373,12 @@ namespace NtoboaFund.Services.HostedServices
 
 
 
-                    WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", false);
-                    WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", false);
+                    await WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", false);
+                    await WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", false);
 
                 }
                 else if ((int)Math.Floor(qdaydiff.TotalSeconds) > 1)
-                    WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", true);
+                    await WinnerSelectionHub.Clients.All.SendAsync("ongoingQuaterlyDraw", true);
             }
             else
             {
@@ -523,7 +523,7 @@ namespace NtoboaFund.Services.HostedServices
                 //    break;
                 //}
 
-                if (item.User.UserType != 2 && item.AmountToWin > ((Settings.WinnerTreshold) * totalOriginalAmount))
+                if (item.User.UserType != 2 && item.AmountToWin > ((Constants.WinnerTreshold) * totalOriginalAmount))
                 {
                     continue;
                 }
@@ -634,7 +634,7 @@ namespace NtoboaFund.Services.HostedServices
                 //    break;
                 //}
 
-                if (item.User.UserType != 2 && item.AmountToWin > ((Settings.WinnerTreshold) * totalOriginalAmount))
+                if (item.User.UserType != 2 && item.AmountToWin > ((Constants.WinnerTreshold) * totalOriginalAmount))
                 {
                     continue;
                 }
@@ -746,7 +746,7 @@ namespace NtoboaFund.Services.HostedServices
                 //    break;
                 //}
 
-                if (item.User.UserType != 2 && item.AmountToWin > ((Settings.WinnerTreshold) * totalOriginalAmount))
+                if (item.User.UserType != 2 && item.AmountToWin > ((Constants.WinnerTreshold) * totalOriginalAmount))
                 {
                     continue;
                 }

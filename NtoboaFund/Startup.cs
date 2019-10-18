@@ -23,6 +23,7 @@ namespace NtoboaFund
     //When Switch between production and test
     //Change Connection String
     //change currentsettings in RaveApiSettingsDTO
+    //Toggle the test/live switch on flutterwave dashboard
     //change Draw Time
 
     /// <summary>
@@ -43,9 +44,9 @@ namespace NtoboaFund
             services.AddCors(options => options.AddPolicy("NtuboaDefault", builder => builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
             //GearHost
-            //DefaultConnectiona
+            //DefaultConnection
             //Azure
-            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"), i => i.EnableRetryOnFailure()));
+            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Azure"), i => i.EnableRetryOnFailure()));
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("Personal");

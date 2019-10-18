@@ -4,6 +4,7 @@ namespace NtoboaFund.Helpers
 {
     public static class Misc
     {
+
         public static string GetRegisteredUserSmsMessage()
         {
             return "Welcome to Ntoboafund, your registration was successful.";

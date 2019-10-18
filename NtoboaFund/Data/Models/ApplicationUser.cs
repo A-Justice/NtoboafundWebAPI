@@ -29,6 +29,7 @@ namespace NtoboaFund.Data.Models
 
         public virtual MobileMoneyDetails MomoDetails { get; set; }
 
+        public decimal Points { get; set; }
 
         /// <summary>
         /// Either Mobile Money or Bank Account

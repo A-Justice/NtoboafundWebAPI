@@ -34,6 +34,19 @@ namespace NtoboaFund.Services
         string GetImagePath(string userEmail);
 
         ApplicationUser GetUser(string Id);
+        ApplicationUser GetFullUser(string Id);
+
+        Task<bool> UserExists(string userId);
+
+        UserStatistics GetUserStatistics(ApplicationUser user);
+
+        ApplicationUser GetUserWithEmail(string email);
+
+        Task SendPasswordResetMessage(ApplicationUser user);
+
+        Task<IdentityResult> ResetPasswordAsync(ApplicationUser user, string token, string newPassword);
+
+        Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword);
     }
 
     public class UserService : IUserService
@@ -45,7 +58,7 @@ namespace NtoboaFund.Services
         };
 
         private readonly AppSettings _appSettings;
-        private NtoboaFundDbContext context;
+        private NtoboaFundDbContext dbContext;
         public static IHostingEnvironment _environment;
 
         public UserManager<ApplicationUser> UserManager { get; }
@@ -62,7 +75,7 @@ namespace NtoboaFund.Services
             MessagingService = messagingService;
             UserManager = userManager;
             _appSettings = appSettings.Value;
-            context = _context;
+            dbContext = _context;
             _environment = environment;
         }
 
@@ -74,7 +87,7 @@ namespace NtoboaFund.Services
             if (!signInResult.Succeeded)
                 return null;
 
-            var user = context.Users.Include("BankDetails").Include("MomoDetails").FirstOrDefault(i => i.UserName.ToLower() == username.ToLower());
+            var user = dbContext.Users.Include("BankDetails").Include("MomoDetails").FirstOrDefault(i => i.UserName.ToLower() == username.ToLower());
 
             user = GenerateTokenForUser(user);
 
@@ -86,7 +99,7 @@ namespace NtoboaFund.Services
         {
             ApplicationUser user = null;
 
-            var User = context.Users.FirstOrDefault(x => x.Email == regUser.Email);
+            var User = dbContext.Users.FirstOrDefault(x => x.Email == regUser.Email);
 
             if (User != null)
             {
@@ -99,9 +112,9 @@ namespace NtoboaFund.Services
             }
 
             var momoDetails = new MobileMoneyDetails();
-            context.MobileMoneyDetails.Add(momoDetails);
+            dbContext.MobileMoneyDetails.Add(momoDetails);
             var bankDetails = new BankDetails();
-            context.BankDetails.Add(bankDetails);
+            dbContext.BankDetails.Add(bankDetails);
 
             user = new ApplicationUser
             {
@@ -138,7 +151,6 @@ namespace NtoboaFund.Services
 
             IdentityResult result = UserManager.CreateAsync
             (user, regUser.Password).Result;
-
             var userRole = regUser.Role ?? "User";
 
             if (result.Succeeded)
@@ -171,9 +183,48 @@ namespace NtoboaFund.Services
                 Console.WriteLine(ex.Message);
             }
 
-            context.SaveChanges();
+            dbContext.SaveChanges();
 
             return Tuple.Create<ApplicationUser, string>(user, null);
+        }
+
+        public async Task<IdentityResult> ResetPasswordAsync(ApplicationUser user, string token, string newPassword)
+        {
+            return await UserManager.ResetPasswordAsync(user, token, newPassword);
+        }
+
+        public async Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword)
+        {
+            return await UserManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        }
+
+        public async Task SendPasswordResetMessage(ApplicationUser user)
+        {
+            string path = _environment.WebRootPath + "\\files\\resetpassword.txt";
+            string html = File.ReadAllText(path);
+
+            var uniqueCode = await GetUniqueCodeForMailReset(user);
+
+            html = html.Replace("resetpasswordform", $"resetpasswordform?token={uniqueCode}");
+
+            await MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Password Reset", html);
+
+        }
+
+        async Task<string> GetUniqueCodeForMailReset(ApplicationUser user)
+        {
+
+            //var f = user.FirstName.Substring(0, 2);
+            //var l = user.LastName.Substring(0, 2);
+            //var em = user.Email.Substring(0, 4);
+            //var d = DateTime.Now.AddHours(1).ToString();
+
+            //var resetToken = $"{f}{l}{em}.{user.Id}.{d}";
+
+            //setUserResetToken(user, resetToken);
+
+
+            return $"{user.Id}.{await UserManager.GeneratePasswordResetTokenAsync(user)}";
         }
 
         public async Task<string> GetUserRole(string userId)
@@ -181,7 +232,7 @@ namespace NtoboaFund.Services
             string userRole = null;
             try
             {
-                var user = context.Users.Find(userId);
+                var user = dbContext.Users.Find(userId);
 
                 userRole = UserManager.GetRolesAsync(user).Result[0];
             }
@@ -194,7 +245,7 @@ namespace NtoboaFund.Services
 
         public ApplicationUser EditUser(UserEditDTO regUser)
         {
-            var user = context.Users.Find(regUser.Id);
+            var user = dbContext.Users.Find(regUser.Id);
             user.FirstName = regUser.FirstName == "null" ? null : regUser.FirstName;
             user.LastName = regUser.LastName == "null" ? null : regUser.LastName;
             user.Email = regUser.Email == "null" ? null : regUser.Email;
@@ -217,10 +268,10 @@ namespace NtoboaFund.Services
 
             try
             {
-                context.Entry(user).State = EntityState.Modified;
-                context.Entry(user.BankDetails).State = EntityState.Modified;
-                context.Entry(user.MomoDetails).State = EntityState.Modified;
-                context.SaveChanges();
+                dbContext.Entry(user).State = EntityState.Modified;
+                dbContext.Entry(user.BankDetails).State = EntityState.Modified;
+                dbContext.Entry(user.MomoDetails).State = EntityState.Modified;
+                dbContext.SaveChanges();
                 return user;
             }
             catch
@@ -229,15 +280,48 @@ namespace NtoboaFund.Services
             }
         }
 
+        /// <summary>
+        /// Returns the current statistics of the user with the specified userId
+        /// </summary>
+        /// <param name="userId">Id of the user</param>
+        /// <returns></returns>
+        public UserStatistics GetUserStatistics(ApplicationUser user)
+        {
+            var s = new UserStatistics();
+
+            s.TotalPoints = user.Points;
+            s.TotalLuckymeStakes = dbContext.LuckyMes.Where(i => i.UserId == user.Id && i.Status != "pending").Count();
+            s.TotalScholarshipStakes = dbContext.Scholarships.Where(i => i.UserId == user.Id && i.Status != "pending").Count();
+            s.TotalBusinessStakes = dbContext.Businesses.Where(i => i.UserId == user.Id && i.Status != "pending").Count();
+            s.TotalStakes = s.TotalLuckymeStakes + s.TotalScholarshipStakes + s.TotalBusinessStakes;
+
+            return s;
+        }
+
         public IEnumerable<ApplicationUser> GetAll()
         {
             // return users without passwords
-            return context.Users.ToList();
+            return dbContext.Users.ToList();
         }
 
         public ApplicationUser GetUser(string Id)
         {
-            return context.Users.Where(i => i.Id == Id).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
+            return dbContext.Users.Where(i => i.Id == Id).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
+        }
+        public ApplicationUser GetFullUser(string Id)
+        {
+            return dbContext.Users.Where(i => i.Id == Id).Include("LuckyMes").Include("Scholarships").Include("Businesses").Include("BankDetails").Include("MomoDetails").FirstOrDefault();
+        }
+
+        public Task<bool> UserExists(string userId)
+        {
+            return dbContext.Users.AnyAsync(i => i.Id == userId);
+        }
+
+        public ApplicationUser GetUserWithEmail(string email)
+        {
+            return dbContext.Users.Where(i => i.Email == email).Include("BankDetails").Include("MomoDetails").FirstOrDefault();
+
         }
 
         public string GetImagePath(string imageName)

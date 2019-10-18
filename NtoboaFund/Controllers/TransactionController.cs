@@ -45,6 +45,8 @@ namespace NtoboaFund.Controllers
             StakersHub = stakersHub;
             MessagingService = messagingService;
             DataHub = dataHub;
+            DataHub.Groups = StakersHub.Groups;
+
         }
 
 
@@ -52,6 +54,8 @@ namespace NtoboaFund.Controllers
         public async Task<IActionResult> VerifyLuckymePayment(string txRef /*, [FromBody]LuckyMe luckyMe*/)
         {
             var luckyMe = dbContext.LuckyMes.Where(i => i.TxRef == txRef && i.Status.ToLower() == "pending").Include("User").FirstOrDefault();
+
+            luckyMe.User.Points += luckyMe.Amount * Constants.PointConstant;
 
             if (luckyMe == null)
             {
@@ -88,7 +92,21 @@ namespace NtoboaFund.Controllers
                             DateDeclared = luckyMe.DateDeclared
                         });
 
-                        DataHub.ManageDummies(EntityTypes.Luckyme, Period.Daily);
+                        foreach (var dummy in DataHub.ManageDummies(EntityTypes.Luckyme, Period.Daily))
+                        {
+                            var luckymeDailyDummy = dummy as LuckyMe;
+                            await StakersHub.Clients.All.SendAsync("adddailyluckymeparticipant",
+                            new LuckyMeParticipantDTO
+                            {
+                                Id = luckymeDailyDummy.Id,
+                                UserId = luckymeDailyDummy.User.Id,
+                                UserName = luckymeDailyDummy.User.FirstName + " " + luckymeDailyDummy.User.LastName,
+                                AmountStaked = luckymeDailyDummy.Amount.ToString(),
+                                AmountToWin = luckymeDailyDummy.AmountToWin.ToString(),
+                                Status = luckymeDailyDummy.Status.ToLower(),
+                                DateDeclared = luckymeDailyDummy.DateDeclared
+                            });
+                        }
                     }
                     else if (luckyMe.Period.ToLower() == "weekly")
                     {
@@ -107,7 +125,24 @@ namespace NtoboaFund.Controllers
                                Status = luckyMe.Status.ToLower(),
                                DateDeclared = luckyMe.DateDeclared
                            });
-                        DataHub.ManageDummies(EntityTypes.Luckyme, Period.Weekly);
+
+                        //InsertLuckyMe dummies and Propagate them to user
+                        foreach (var dummy in DataHub.ManageDummies(EntityTypes.Luckyme, Period.Weekly))
+                        {
+                            var luckymeWeeklyDummy = dummy as LuckyMe;
+                            await StakersHub.Clients.All.SendAsync("addweeklyluckymeparticipant",
+                            new LuckyMeParticipantDTO
+                            {
+                                Id = luckymeWeeklyDummy.Id,
+                                UserId = luckymeWeeklyDummy.User.Id,
+                                UserName = luckymeWeeklyDummy.User.FirstName + " " + luckymeWeeklyDummy.User.LastName,
+                                AmountStaked = luckymeWeeklyDummy.Amount.ToString(),
+                                AmountToWin = luckymeWeeklyDummy.AmountToWin.ToString(),
+                                Status = luckymeWeeklyDummy.Status.ToLower(),
+                                DateDeclared = luckymeWeeklyDummy.DateDeclared
+                            });
+                        }
+
                     }
                     else if (luckyMe.Period.ToLower() == "monthly")
                     {
@@ -125,7 +160,23 @@ namespace NtoboaFund.Controllers
                                Status = luckyMe.Status.ToLower(),
                                DateDeclared = luckyMe.DateDeclared
                            });
-                        DataHub.ManageDummies(EntityTypes.Luckyme, Period.Monthly);
+                        //InsertLuckyMe dummies and Propagate them to user
+                        foreach (var dummy in DataHub.ManageDummies(EntityTypes.Luckyme, Period.Monthly))
+                        {
+                            var luckymeMonthlyDummy = dummy as LuckyMe;
+                            await StakersHub.Clients.All.SendAsync("addmonthlyluckymeparticipant",
+                            new LuckyMeParticipantDTO
+                            {
+                                Id = luckymeMonthlyDummy.Id,
+                                UserId = luckymeMonthlyDummy.User.Id,
+                                UserName = luckymeMonthlyDummy.User.FirstName + " " + luckymeMonthlyDummy.User.LastName,
+                                AmountStaked = luckymeMonthlyDummy.Amount.ToString(),
+                                AmountToWin = luckymeMonthlyDummy.AmountToWin.ToString(),
+                                Status = luckymeMonthlyDummy.Status.ToLower(),
+                                DateDeclared = luckymeMonthlyDummy.DateDeclared
+                            });
+                        }
+
                     }
 
                 }
@@ -144,6 +195,9 @@ namespace NtoboaFund.Controllers
         public async Task<IActionResult> VerifyScholarshipPayment(string txRef/*, [FromBody]Scholarship scholarship*/)
         {
             var scholarship = dbContext.Scholarships.Where(i => i.TxRef == txRef && i.Status.ToLower() == "pending").Include("User").FirstOrDefault();
+
+            scholarship.User.Points += scholarship.Amount * Constants.PointConstant;
+
             if (scholarship == null)
             {
                 return BadRequest(new { errorString = "Scholarship stake was not found" });
@@ -178,7 +232,23 @@ namespace NtoboaFund.Controllers
                            AmountToWin = scholarship.AmountToWin.ToString(),
                            Status = scholarship.Status.ToLower()
                        });
-                    DataHub.ManageDummies(EntityTypes.Scholarship, null);
+                    //Insert Scholarship dummies and Propagate them to user
+                    foreach (var dummy in DataHub.ManageDummies(EntityTypes.Scholarship, null))
+                    {
+                        var ScholarshipDummy = dummy as Scholarship;
+                        await StakersHub.Clients.All.SendAsync("addscholarshipparticipant",
+                        new ScholarshipParticipantDTO
+                        {
+                            Id = ScholarshipDummy.Id,
+                            UserId = ScholarshipDummy.User.Id,
+                            UserName = ScholarshipDummy.User.FirstName + " " + ScholarshipDummy.User.LastName,
+                            AmountStaked = ScholarshipDummy.Amount.ToString(),
+                            AmountToWin = ScholarshipDummy.AmountToWin.ToString(),
+                            Status = ScholarshipDummy.Status.ToLower(),
+                            DateDeclared = ScholarshipDummy.DateDeclared
+                        });
+                    }
+
                 }
                 else if (scholarship.Status.ToLower() != "paid")
                 {
@@ -202,6 +272,8 @@ namespace NtoboaFund.Controllers
         public async Task<IActionResult> VerifyBusinessPayment(string txRef/*, [FromBody]Business business*/)
         {
             var business = dbContext.Businesses.Where(i => i.TxRef == txRef && i.Status.ToLower() == "pending").Include("User").FirstOrDefault();
+
+            business.User.Points += business.Amount * Constants.PointConstant;
 
             if (business == null)
             {
@@ -237,7 +309,24 @@ namespace NtoboaFund.Controllers
                              AmountToWin = business.AmountToWin.ToString(),
                              Status = business.Status.ToLower()
                          });
-                DataHub.ManageDummies(EntityTypes.Business, null);
+
+                //Insert Business dummies and Propagate them to user
+                foreach (var dummy in DataHub.ManageDummies(EntityTypes.Business, null))
+                {
+                    var BusinessDummy = dummy as Business;
+                    await StakersHub.Clients.All.SendAsync("addbusinessparticipant",
+                    new BusinessParticipantDTO
+                    {
+                        Id = BusinessDummy.Id,
+                        UserId = BusinessDummy.User.Id,
+                        UserName = BusinessDummy.User.FirstName + " " + BusinessDummy.User.LastName,
+                        AmountStaked = BusinessDummy.Amount.ToString(),
+                        AmountToWin = BusinessDummy.AmountToWin.ToString(),
+                        Status = BusinessDummy.Status.ToLower(),
+                        DateDeclared = BusinessDummy.DateDeclared
+                    });
+                }
+
 
                 //resultString = GenerateHubtelUrl(business.Id, business.Amount, "business");
             }
@@ -266,6 +355,7 @@ namespace NtoboaFund.Controllers
         {
             if (await dbContext.LuckyMes.AnyAsync(i => i.TxRef == response.txRef))
             {
+
                 await VerifyLuckymePayment(response.txRef);
 
             }
@@ -365,7 +455,6 @@ namespace NtoboaFund.Controllers
 
             return resultString;
         }
-
 
     }
 

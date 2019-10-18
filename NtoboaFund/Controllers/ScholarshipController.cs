@@ -132,9 +132,9 @@ namespace NtoboaFund.Controllers
                 return BadRequest(ModelState);
             }
 
-            scholarship.Amount = Settings.ScholarshipStakeAmount;
+            scholarship.Amount = Constants.ScholarshipStakeAmount;
             scholarship.Date = DateTime.Now.ToLongDateString();
-            scholarship.AmountToWin = (scholarship.Amount * Settings.ScholarshipStakeOdds);
+            scholarship.AmountToWin = (scholarship.Amount * Constants.ScholarshipStakeOdds);
             scholarship.Status = "Pending";
             scholarship.Period = "quaterly";
             scholarship.User = dbContext.Users.Find(scholarship.UserId);

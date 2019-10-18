@@ -135,7 +135,7 @@ namespace NtoboaFund.Controllers
             }
 
             luckyMe.Date = DateTime.Now.ToLongDateString();
-            luckyMe.AmountToWin = luckyMe.Amount * Settings.LuckymeStakeOdds;
+            luckyMe.AmountToWin = luckyMe.Amount * Constants.LuckymeStakeOdds;
             luckyMe.Status = "pending";
             luckyMe.User = await dbContext.Users.FindAsync(luckyMe.UserId);
             dbContext.LuckyMes.Add(luckyMe);
