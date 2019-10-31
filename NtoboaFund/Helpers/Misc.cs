@@ -32,12 +32,12 @@ namespace NtoboaFund.Helpers
                     break;
             }
             return $"You have successfully made a {period.ToString()} {entityType.ToString()} " +
-                $"ntoboa of {amount.ToString()}, your draw will happen on {drawDate}." +
+                $"ntoboa of {amount.ToString("0.##")}, your draw will happen on {drawDate}." +
                 $" Stay tuned.";
         }
 
 
-        public static string FormatGhanaianPhoneNumber(string phoneNumber)
+        public static string FormatPhoneNumber(string phoneNumber)
         {
             if (phoneNumber.StartsWith("0") && phoneNumber.Length == 10)
             {

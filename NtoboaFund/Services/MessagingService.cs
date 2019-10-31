@@ -78,7 +78,7 @@ namespace NtoboaFund.Services
             var payload = new
             {
                 key = AppSetting.MNotifySettings.ApiKey,
-                recipent = new string[] { phoneNumber },
+                recipent = new string[] { Misc.FormatPhoneNumber(phoneNumber) },
                 sender = "Ntoboafund",
                 message = message,
                 is_schedule = false

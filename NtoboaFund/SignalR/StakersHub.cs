@@ -113,8 +113,8 @@ namespace NtoboaFund.SignalR
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
-                AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString(),
+                AmountStaked = i.Amount.ToString("0.##"),
+                AmountToWin = i.AmountToWin.ToString("0.##"),
                 Status = i.Status
 
             }).ToList();
@@ -130,8 +130,8 @@ namespace NtoboaFund.SignalR
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
-                AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString(),
+                AmountStaked = i.Amount.ToString("0.##"),
+                AmountToWin = i.AmountToWin.ToString("0.##"),
                 Status = i.Status
 
             }).ToList();
@@ -147,8 +147,8 @@ namespace NtoboaFund.SignalR
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
-                AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString(),
+                AmountStaked = i.Amount.ToString("0.##"),
+                AmountToWin = i.AmountToWin.ToString("0.##"),
                 Status = i.Status
 
             }).ToList();
@@ -165,8 +165,8 @@ namespace NtoboaFund.SignalR
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
-                AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString(),
+                AmountStaked = i.Amount.ToString("0.##"),
+                AmountToWin = i.AmountToWin.ToString("0.##"),
                 Status = i.Status
 
             }).ToList();
@@ -181,8 +181,8 @@ namespace NtoboaFund.SignalR
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
-                AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString(),
+                AmountStaked = i.Amount.ToString("0.##"),
+                AmountToWin = i.AmountToWin.ToString("0.##"),
                 Status = i.Status
 
             }).ToList();
@@ -195,8 +195,8 @@ namespace NtoboaFund.SignalR
             //{
             //    UserName = i.User.FirstName + " " + i.User.LastName,
             //    UserId = i.UserId,
-            //    AmountStaked = i.Amount.ToString(),
-            //    AmountToWin = i.AmountToWin.ToString()
+            //    AmountStaked = i.Amount.ToString("0.##"),
+            //    AmountToWin = i.AmountToWin.ToString("0.##")
 
             //});
             await Clients.Caller.SendAsync("getCurrentScholarshipParticipants", GetScholarshipParticipants());
@@ -208,8 +208,8 @@ namespace NtoboaFund.SignalR
             //{
             //    UserName = i.User.FirstName + " " + i.User.LastName,
             //    UserId = i.UserId,
-            //    AmountStaked = i.Amount.ToString(),
-            //    AmountToWin = i.AmountToWin.ToString()
+            //    AmountStaked = i.Amount.ToString("0.##"),
+            //    AmountToWin = i.AmountToWin.ToString("0.##")
 
             //});
             await Clients.Caller.SendAsync("getCurrentBusinessParticipants", GetBusinessParticipants());
@@ -221,8 +221,8 @@ namespace NtoboaFund.SignalR
             //{
             //    UserName = i.User.FirstName + " " + i.User.LastName,
             //    UserId = i.UserId,
-            //    AmountStaked = i.Amount.ToString(),
-            //    AmountToWin = i.AmountToWin.ToString()
+            //    AmountStaked = i.Amount.ToString("0.##"),
+            //    AmountToWin = i.AmountToWin.ToString("0.##")
 
             //});
             await Clients.Caller.SendAsync("getCurrentDailyLuckymeParticipants", GetDailyLuckymeParticipants());
@@ -234,8 +234,8 @@ namespace NtoboaFund.SignalR
             //{
             //    UserName = i.User.FirstName + " " + i.User.LastName,
             //    UserId = i.UserId,
-            //    AmountStaked = i.Amount.ToString(),
-            //    AmountToWin = i.AmountToWin.ToString()
+            //    AmountStaked = i.Amount.ToString("0.##"),
+            //    AmountToWin = i.AmountToWin.ToString("0.##")
 
             //});
             await Clients.Caller.SendAsync("getCurrentWeeklyLuckymeParticipants", GetWeeklyLuckymeParticipants());
@@ -247,8 +247,8 @@ namespace NtoboaFund.SignalR
             //{
             //    UserName = i.User.FirstName + " " + i.User.LastName,
             //    UserId = i.UserId,
-            //    AmountStaked = i.Amount.ToString(),
-            //    AmountToWin = i.AmountToWin.ToString()
+            //    AmountStaked = i.Amount.ToString("0.##"),
+            //    AmountToWin = i.AmountToWin.ToString("0.##")
 
             //});
             await Clients.Caller.SendAsync("getCurrentMonthlyLuckymeParticipants", GetMonthlyLuckymeParticipants());
@@ -289,8 +289,8 @@ namespace NtoboaFund.SignalR
                            Id = luckyme.Id,
                            UserId = luckyme.User.Id,
                            UserName = luckyme.User.FirstName + " " + luckyme.User.LastName,
-                           AmountStaked = luckyme.Amount.ToString(),
-                           AmountToWin = luckyme.AmountToWin.ToString(),
+                           AmountStaked = luckyme.Amount.ToString("0.##"),
+                           AmountToWin = luckyme.AmountToWin.ToString("0.##"),
                            Status = luckyme.Status
                        });
                 }
@@ -303,8 +303,8 @@ namespace NtoboaFund.SignalR
                           Id = luckyme.Id,
                           UserId = luckyme.User.Id,
                           UserName = luckyme.User.FirstName + " " + luckyme.User.LastName,
-                          AmountStaked = luckyme.Amount.ToString(),
-                          AmountToWin = luckyme.AmountToWin.ToString(),
+                          AmountStaked = luckyme.Amount.ToString("0.##"),
+                          AmountToWin = luckyme.AmountToWin.ToString("0.##"),
                           Status = luckyme.Status
                       });
                 }
@@ -317,8 +317,8 @@ namespace NtoboaFund.SignalR
                         Id = luckyme.Id,
                         UserId = luckyme.User.Id,
                         UserName = luckyme.User.FirstName + " " + luckyme.User.LastName,
-                        AmountStaked = luckyme.Amount.ToString(),
-                        AmountToWin = luckyme.AmountToWin.ToString(),
+                        AmountStaked = luckyme.Amount.ToString("0.##"),
+                        AmountToWin = luckyme.AmountToWin.ToString("0.##"),
                         Status = luckyme.Status
                     });
                 }
@@ -332,8 +332,8 @@ namespace NtoboaFund.SignalR
                     Id = business.Id,
                     UserId = business.User.Id,
                     UserName = business.User.FirstName + " " + business.User.LastName,
-                    AmountStaked = business.Amount.ToString(),
-                    AmountToWin = business.AmountToWin.ToString(),
+                    AmountStaked = business.Amount.ToString("0.##"),
+                    AmountToWin = business.AmountToWin.ToString("0.##"),
                     Status = business.Status
                 });
             }
@@ -346,8 +346,8 @@ namespace NtoboaFund.SignalR
                     Id = scholarship.Id,
                     UserId = scholarship.User.Id,
                     UserName = scholarship.User.FirstName + " " + scholarship.User.LastName,
-                    AmountStaked = scholarship.Amount.ToString(),
-                    AmountToWin = scholarship.AmountToWin.ToString(),
+                    AmountStaked = scholarship.Amount.ToString("0.##"),
+                    AmountToWin = scholarship.AmountToWin.ToString("0.##"),
                     Status = scholarship.Status
                 });
             }

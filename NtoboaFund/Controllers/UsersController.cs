@@ -57,7 +57,7 @@ namespace NtoboaFund.Controllers
             var user = _userService.GetUserWithEmail(email);
             if (user == null)
             {
-                return BadRequest(new { message = "Sorry, We dont know this email address." });
+                return BadRequest(new { message = "Sorry, this email address does not exist in our database." });
             }
 
             _userService.SendPasswordResetMessage(user);

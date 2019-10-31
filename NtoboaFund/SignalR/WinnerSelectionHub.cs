@@ -24,8 +24,8 @@ namespace NtoboaFund.SignalR
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
-                AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString(),
+                AmountStaked = i.Amount.ToString("0.##"),
+                AmountToWin = i.AmountToWin.ToString("0.##"),
                 Status = i.Status,
                 DateDeclared = i.DateDeclared
 
@@ -40,8 +40,8 @@ namespace NtoboaFund.SignalR
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
-                AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString(),
+                AmountStaked = i.Amount.ToString("0.##"),
+                AmountToWin = i.AmountToWin.ToString("0.##"),
                 Status = i.Status,
                 DateDeclared = i.DateDeclared
 
@@ -57,8 +57,8 @@ namespace NtoboaFund.SignalR
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
-                AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString(),
+                AmountStaked = i.Amount.ToString("0.##"),
+                AmountToWin = i.AmountToWin.ToString("0.##"),
                 Status = i.Status
                 ,
                 DateDeclared = i.DateDeclared
@@ -74,8 +74,8 @@ namespace NtoboaFund.SignalR
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
-                AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString(),
+                AmountStaked = i.Amount.ToString("0.##"),
+                AmountToWin = i.AmountToWin.ToString("0.##"),
                 Status = i.Status,
                 DateDeclared = i.DateDeclared
 
@@ -90,8 +90,8 @@ namespace NtoboaFund.SignalR
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
                 UserId = i.UserId,
-                AmountStaked = i.Amount.ToString(),
-                AmountToWin = i.AmountToWin.ToString(),
+                AmountStaked = i.Amount.ToString("0.##"),
+                AmountToWin = i.AmountToWin.ToString("0.##"),
                 Status = i.Status,
                 DateDeclared = i.DateDeclared
 

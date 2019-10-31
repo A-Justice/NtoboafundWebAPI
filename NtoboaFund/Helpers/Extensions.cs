@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace NtoboaFund.Helpers
 {
@@ -22,7 +19,7 @@ namespace NtoboaFund.Helpers
 
         public static DateTime EndOfWeek(this DateTime dateTime, int hours, int minutes, int seconds, int milliseconds)
         {
-            if(DateTime.Now.Day == dateTime.LastDayOfWeek().Day && DateTime.Now.Hour >= hours && DateTime.Now.Second > seconds)
+            if (DateTime.Now.Day == dateTime.LastDayOfWeek().Day && DateTime.Now.Hour >= hours && DateTime.Now.Second > seconds)
             {
                 dateTime = dateTime.AddDays(1);
             }
@@ -38,9 +35,9 @@ namespace NtoboaFund.Helpers
         }
 
 
-        public static DateTime EndOfMonth(this DateTime dateTime,int hours, int minutes, int seconds, int milliseconds)
+        public static DateTime EndOfMonth(this DateTime dateTime, int hours, int minutes, int seconds, int milliseconds)
         {
-            var day = DateTime.DaysInMonth(dateTime.Year,dateTime.Month);
+            var day = DateTime.DaysInMonth(dateTime.Year, dateTime.Month);
 
             if (DateTime.Now.Day == day && DateTime.Now.Hour >= hours && DateTime.Now.Minute >= minutes && DateTime.Now.Second > seconds)
             {
@@ -48,43 +45,43 @@ namespace NtoboaFund.Helpers
                 day = DateTime.DaysInMonth(dateTime.Year, dateTime.Month);
             }
 
-                return new DateTime(
-                dateTime.Year,
-                dateTime.Month,
-                day,
-                hours,
-                minutes,
-                seconds,
-                milliseconds,
-                dateTime.Kind);
+            return new DateTime(
+            dateTime.Year,
+            dateTime.Month,
+            day,
+            hours,
+            minutes,
+            seconds,
+            milliseconds,
+            dateTime.Kind);
         }
 
-        public static DateTime NextQuater(this DateTime dateTime,int hours, int minutes, int seconds, int milliseconds)
+        public static DateTime NextQuater(this DateTime dateTime, int hours, int minutes, int seconds, int milliseconds)
         {
             int quaterlyYear = dateTime.Year;
             //The list of months that are considered to be quaters
-            int[] quaterlyMonths = new int[]{3,6,9,12};
+            int[] quaterlyMonths = new int[] { 3, 6, 9, 12 };
             //initialize the quaterly month;
             int quaterlyMonth = dateTime.Month;
             //initialize the quaterly day;
             int day = 0;
             //Loop through the list of quaterly months from least to highest
-            foreach(var item in quaterlyMonths)
+            foreach (var item in quaterlyMonths)
             {
                 //if the current iteration is considered to be be higher or equal to the current month
                 //it is suspected to be the closest quater
-                if(dateTime.Month <= item)
+                if (dateTime.Month <= item)
                 {
                     //get the total number of days in the month of the current iteration
                     day = DateTime.DaysInMonth(dateTime.Year, item);
 
                     //It can happen that we are in the last day of a quater month .. but the current draw the is completed
-                    
+
                     if (dateTime.Month == item && dateTime.Day == day && dateTime.Hour >= hours && dateTime.Minute >= minutes && dateTime.Second > seconds)
                     {
                         //If the above condition is true but we are in the last month of the year ..
                         // Then we have to change the current year to the next and choose it's first quater
-                        if(item == 12)
+                        if (item == 12)
                         {
                             quaterlyYear += 1;
                             quaterlyMonth = 3;
@@ -104,7 +101,7 @@ namespace NtoboaFund.Helpers
                 }
             }
 
-            
+
             return new DateTime(
                 quaterlyYear,
                 quaterlyMonth,
@@ -147,7 +144,7 @@ namespace NtoboaFund.Helpers
 
         public static DateTime DailyStakeEndDate(this DateTime dateTime)
         {
-            
+
 
             if (dateTime.Hour >= 18 && dateTime.Second > 0)
             {
@@ -168,8 +165,8 @@ namespace NtoboaFund.Helpers
                 //{
                 //    day++;
                 //}
-             
-            dateTime = dateTime.AddDays(1);
+
+                dateTime = dateTime.AddDays(1);
             }
 
             return new DateTime(
@@ -186,11 +183,11 @@ namespace NtoboaFund.Helpers
 
         public static DateTime NextFiveMinutes(this DateTime dateTime)
         {
-           var minute = dateTime.Minute;
-            if(minute % 5 == 0)
-                minute +=5;
+            var minute = dateTime.Minute;
+            if (minute % 5 == 0)
+                minute += 5;
 
-            while (minute % 5!= 0)
+            while (minute % 5 != 0)
             {
                 minute++;
             }
@@ -204,6 +201,13 @@ namespace NtoboaFund.Helpers
                 0,
                 dateTime.Kind);
         }
+
+
+        public static string ToString(this decimal theDecimal)
+        {
+            return theDecimal.ToString("0.##");
+        }
+
 
     }
 }

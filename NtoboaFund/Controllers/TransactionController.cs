@@ -86,8 +86,8 @@ namespace NtoboaFund.Controllers
                             Id = luckyMe.Id,
                             UserId = luckyMe.User.Id,
                             UserName = luckyMe.User.FirstName + " " + luckyMe.User.LastName,
-                            AmountStaked = luckyMe.Amount.ToString(),
-                            AmountToWin = luckyMe.AmountToWin.ToString(),
+                            AmountStaked = luckyMe.Amount.ToString("0.##"),
+                            AmountToWin = luckyMe.AmountToWin.ToString("0.##"),
                             Status = luckyMe.Status.ToLower(),
                             DateDeclared = luckyMe.DateDeclared
                         });
@@ -101,8 +101,8 @@ namespace NtoboaFund.Controllers
                                 Id = luckymeDailyDummy.Id,
                                 UserId = luckymeDailyDummy.User.Id,
                                 UserName = luckymeDailyDummy.User.FirstName + " " + luckymeDailyDummy.User.LastName,
-                                AmountStaked = luckymeDailyDummy.Amount.ToString(),
-                                AmountToWin = luckymeDailyDummy.AmountToWin.ToString(),
+                                AmountStaked = luckymeDailyDummy.Amount.ToString("0.##"),
+                                AmountToWin = luckymeDailyDummy.AmountToWin.ToString("0.##"),
                                 Status = luckymeDailyDummy.Status.ToLower(),
                                 DateDeclared = luckymeDailyDummy.DateDeclared
                             });
@@ -120,8 +120,8 @@ namespace NtoboaFund.Controllers
                                Id = luckyMe.Id,
                                UserId = luckyMe.User.Id,
                                UserName = luckyMe.User.FirstName + " " + luckyMe.User.LastName,
-                               AmountStaked = luckyMe.Amount.ToString(),
-                               AmountToWin = luckyMe.AmountToWin.ToString(),
+                               AmountStaked = luckyMe.Amount.ToString("0.##"),
+                               AmountToWin = luckyMe.AmountToWin.ToString("0.##"),
                                Status = luckyMe.Status.ToLower(),
                                DateDeclared = luckyMe.DateDeclared
                            });
@@ -136,8 +136,8 @@ namespace NtoboaFund.Controllers
                                 Id = luckymeWeeklyDummy.Id,
                                 UserId = luckymeWeeklyDummy.User.Id,
                                 UserName = luckymeWeeklyDummy.User.FirstName + " " + luckymeWeeklyDummy.User.LastName,
-                                AmountStaked = luckymeWeeklyDummy.Amount.ToString(),
-                                AmountToWin = luckymeWeeklyDummy.AmountToWin.ToString(),
+                                AmountStaked = luckymeWeeklyDummy.Amount.ToString("0.##"),
+                                AmountToWin = luckymeWeeklyDummy.AmountToWin.ToString("0.##"),
                                 Status = luckymeWeeklyDummy.Status.ToLower(),
                                 DateDeclared = luckymeWeeklyDummy.DateDeclared
                             });
@@ -155,8 +155,8 @@ namespace NtoboaFund.Controllers
                                Id = luckyMe.Id,
                                UserId = luckyMe.User.Id,
                                UserName = luckyMe.User.FirstName + " " + luckyMe.User.LastName,
-                               AmountStaked = luckyMe.Amount.ToString(),
-                               AmountToWin = luckyMe.AmountToWin.ToString(),
+                               AmountStaked = luckyMe.Amount.ToString("0.##"),
+                               AmountToWin = luckyMe.AmountToWin.ToString("0.##"),
                                Status = luckyMe.Status.ToLower(),
                                DateDeclared = luckyMe.DateDeclared
                            });
@@ -170,8 +170,8 @@ namespace NtoboaFund.Controllers
                                 Id = luckymeMonthlyDummy.Id,
                                 UserId = luckymeMonthlyDummy.User.Id,
                                 UserName = luckymeMonthlyDummy.User.FirstName + " " + luckymeMonthlyDummy.User.LastName,
-                                AmountStaked = luckymeMonthlyDummy.Amount.ToString(),
-                                AmountToWin = luckymeMonthlyDummy.AmountToWin.ToString(),
+                                AmountStaked = luckymeMonthlyDummy.Amount.ToString("0.##"),
+                                AmountToWin = luckymeMonthlyDummy.AmountToWin.ToString("0.##"),
                                 Status = luckymeMonthlyDummy.Status.ToLower(),
                                 DateDeclared = luckymeMonthlyDummy.DateDeclared
                             });
@@ -228,8 +228,8 @@ namespace NtoboaFund.Controllers
                            Id = scholarship.Id,
                            UserId = scholarship.User.Id,
                            UserName = scholarship.User.FirstName + " " + scholarship.User.LastName,
-                           AmountStaked = scholarship.Amount.ToString(),
-                           AmountToWin = scholarship.AmountToWin.ToString(),
+                           AmountStaked = scholarship.Amount.ToString("0.##"),
+                           AmountToWin = scholarship.AmountToWin.ToString("0.##"),
                            Status = scholarship.Status.ToLower()
                        });
                     //Insert Scholarship dummies and Propagate them to user
@@ -242,8 +242,8 @@ namespace NtoboaFund.Controllers
                             Id = ScholarshipDummy.Id,
                             UserId = ScholarshipDummy.User.Id,
                             UserName = ScholarshipDummy.User.FirstName + " " + ScholarshipDummy.User.LastName,
-                            AmountStaked = ScholarshipDummy.Amount.ToString(),
-                            AmountToWin = ScholarshipDummy.AmountToWin.ToString(),
+                            AmountStaked = ScholarshipDummy.Amount.ToString("0.##"),
+                            AmountToWin = ScholarshipDummy.AmountToWin.ToString("0.##"),
                             Status = ScholarshipDummy.Status.ToLower(),
                             DateDeclared = ScholarshipDummy.DateDeclared
                         });
@@ -305,8 +305,8 @@ namespace NtoboaFund.Controllers
                              Id = business.Id,
                              UserId = business.User.Id,
                              UserName = business.User.FirstName + " " + business.User.LastName,
-                             AmountStaked = business.Amount.ToString(),
-                             AmountToWin = business.AmountToWin.ToString(),
+                             AmountStaked = business.Amount.ToString("0.##"),
+                             AmountToWin = business.AmountToWin.ToString("0.##"),
                              Status = business.Status.ToLower()
                          });
 
@@ -320,8 +320,8 @@ namespace NtoboaFund.Controllers
                         Id = BusinessDummy.Id,
                         UserId = BusinessDummy.User.Id,
                         UserName = BusinessDummy.User.FirstName + " " + BusinessDummy.User.LastName,
-                        AmountStaked = BusinessDummy.Amount.ToString(),
-                        AmountToWin = BusinessDummy.AmountToWin.ToString(),
+                        AmountStaked = BusinessDummy.Amount.ToString("0.##"),
+                        AmountToWin = BusinessDummy.AmountToWin.ToString("0.##"),
                         Status = BusinessDummy.Status.ToLower(),
                         DateDeclared = BusinessDummy.DateDeclared
                     });

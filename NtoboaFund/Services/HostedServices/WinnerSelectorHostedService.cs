@@ -100,8 +100,8 @@ namespace NtoboaFund.Services.HostedServices
                             Id = i.Id,
                             UserName = i.User.FirstName + " " + i.User.LastName,
                             UserId = i.UserId,
-                            AmountStaked = i.Amount.ToString(),
-                            AmountToWin = i.AmountToWin.ToString(),
+                            AmountStaked = i.Amount.ToString("0.##"),
+                            AmountToWin = i.AmountToWin.ToString("0.##"),
                             Status = i.Status,
                             DateDeclared = i.DateDeclared
                         }));
@@ -168,8 +168,8 @@ namespace NtoboaFund.Services.HostedServices
                             Id = i.Id,
                             UserName = i.User.FirstName + " " + i.User.LastName,
                             UserId = i.UserId,
-                            AmountStaked = i.Amount.ToString(),
-                            AmountToWin = i.AmountToWin.ToString(),
+                            AmountStaked = i.Amount.ToString("0.##"),
+                            AmountToWin = i.AmountToWin.ToString("0.##"),
                             Status = i.Status,
                             DateDeclared = i.DateDeclared
                         }));
@@ -243,8 +243,8 @@ namespace NtoboaFund.Services.HostedServices
                                 Id = i.Id,
                                 UserName = i.User.FirstName + " " + i.User.LastName,
                                 UserId = i.UserId,
-                                AmountStaked = i.Amount.ToString(),
-                                AmountToWin = i.AmountToWin.ToString(),
+                                AmountStaked = i.Amount.ToString("0.##"),
+                                AmountToWin = i.AmountToWin.ToString("0.##"),
                                 Status = i.Status,
                                 DateDeclared = i.DateDeclared
                             }));
@@ -271,8 +271,8 @@ namespace NtoboaFund.Services.HostedServices
                                 Id = i.Id,
                                 UserName = i.User.FirstName + " " + i.User.LastName,
                                 UserId = i.UserId,
-                                AmountStaked = i.Amount.ToString(),
-                                AmountToWin = i.AmountToWin.ToString(),
+                                AmountStaked = i.Amount.ToString("0.##"),
+                                AmountToWin = i.AmountToWin.ToString("0.##"),
                                 Status = i.Status,
                                 DateDeclared = i.DateDeclared
                             }));
@@ -350,8 +350,8 @@ namespace NtoboaFund.Services.HostedServices
                             Id = i.Id,
                             UserName = i.User.FirstName + " " + i.User.LastName,
                             UserId = i.UserId,
-                            AmountStaked = i.Amount.ToString(),
-                            AmountToWin = i.AmountToWin.ToString(),
+                            AmountStaked = i.Amount.ToString("0.##"),
+                            AmountToWin = i.AmountToWin.ToString("0.##"),
                             Status = i.Status,
                             DateDeclared = i.DateDeclared
                         }));
@@ -696,8 +696,8 @@ namespace NtoboaFund.Services.HostedServices
                         //    {
                         //        UserId = user.Id,
                         //        UserName = user.FirstName + " " + user.LastName,
-                        //        AmountStaked = item.Amount.ToString(),
-                        //        AmountToWin = item.AmountToWin.ToString()
+                        //        AmountStaked = item.Amount.ToString("0.##"),
+                        //        AmountToWin = item.AmountToWin.ToString("0.##")
 
                         //    }
                         //});
@@ -806,8 +806,8 @@ namespace NtoboaFund.Services.HostedServices
                         //    {
                         //        UserId = user.Id,
                         //        UserName = user.FirstName + " " + user.LastName,
-                        //        AmountStaked = item.Amount.ToString(),
-                        //        AmountToWin = item.AmountToWin.ToString()
+                        //        AmountStaked = item.Amount.ToString("0.##"),
+                        //        AmountToWin = item.AmountToWin.ToString("0.##")
 
                         //    }
                         //});
