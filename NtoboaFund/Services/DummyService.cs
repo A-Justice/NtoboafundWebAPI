@@ -199,7 +199,8 @@ namespace NtoboaFund.Services
                 AmountToWin = Constants.ScholarshipStakeOdds * amount,
                 Institution = "",
                 Program = "",
-                StudentId = ""
+                StudentId = "",
+                PlayerType = ""
             };
             context.Scholarships.Add(scholarship);
             context.SaveChanges();

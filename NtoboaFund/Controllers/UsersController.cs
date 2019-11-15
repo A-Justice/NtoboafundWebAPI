@@ -138,6 +138,7 @@ namespace NtoboaFund.Controllers
             return NoContent();
         }
 
+        [AllowAnonymous]
         /// <summary>
         /// Chech wether user with the specified Id exists
         /// </summary>

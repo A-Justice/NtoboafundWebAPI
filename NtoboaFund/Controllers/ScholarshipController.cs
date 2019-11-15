@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using NtoboaFund.Data.DBContext;
 using NtoboaFund.Data.Models;
 using NtoboaFund.Helpers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace NtoboaFund.Controllers
 {
@@ -36,10 +35,10 @@ namespace NtoboaFund.Controllers
         [HttpGet("foruser/{userId}")]
         public IEnumerable<Scholarship> GetScholarships([FromRoute]string userId)
         {
-            return dbContext.Scholarships.Where(l=>l.UserId == userId);
+            return dbContext.Scholarships.Where(l => l.UserId == userId);
         }
 
-        [HttpGet("bystatus/{status}")]  
+        [HttpGet("bystatus/{status}")]
         public IEnumerable<Scholarship> GetScholarshipsByStatus([FromRoute] string status)
         {
             if (status.ToLower() == "all")
@@ -132,12 +131,13 @@ namespace NtoboaFund.Controllers
                 return BadRequest(ModelState);
             }
 
-            scholarship.Amount = Constants.ScholarshipStakeAmount;
+            //scholarship.Amount = scholarship.Amount;
             scholarship.Date = DateTime.Now.ToLongDateString();
             scholarship.AmountToWin = (scholarship.Amount * Constants.ScholarshipStakeOdds);
             scholarship.Status = "Pending";
             scholarship.Period = "quaterly";
             scholarship.User = dbContext.Users.Find(scholarship.UserId);
+
 
             dbContext.Scholarships.Add(scholarship);
             await dbContext.SaveChangesAsync();

@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using NtoboaFund.Data.DBContext;
-using NtoboaFund.Data.DTO_s;
 using NtoboaFund.Data.Models;
 using NtoboaFund.Helpers;
 using System;
@@ -23,6 +22,7 @@ namespace NtoboaFund.Controllers
         public LuckyMesController(NtoboaFundDbContext context, IOptions<AppSettings> appSettings)
         {
             dbContext = context;
+            AppSettings = appSettings.Value;
         }
 
         // GET: api/LuckyMes
@@ -35,10 +35,10 @@ namespace NtoboaFund.Controllers
         [HttpGet("bytype/{type}")]
         public IEnumerable<LuckyMe> GetLuckyMesByType(string type)
         {
-            if(type.ToLower() == "all")
+            if (type.ToLower() == "all")
                 return dbContext.LuckyMes;
-            else if(type.ToLower() == "2")
-                return dbContext.LuckyMes.Where(i=>i.User.UserType.ToString() == type.ToLower());
+            else if (type.ToLower() == "2")
+                return dbContext.LuckyMes.Where(i => i.User.UserType.ToString() == type.ToLower());
             else
                 return dbContext.LuckyMes.Where(i => i.User.UserType != 2);
         }
@@ -59,9 +59,9 @@ namespace NtoboaFund.Controllers
         [HttpGet("bystatus/{status}")]
         public IEnumerable<LuckyMe> GetLuckyMesByStatus([FromRoute] string status)
         {
-            if(status.ToLower() == "all")
+            if (status.ToLower() == "all")
                 return GetLuckyMes();
-            return dbContext.LuckyMes.Where(i=>i.Status.ToLower() == status);
+            return dbContext.LuckyMes.Where(i => i.Status.ToLower() == status);
         }
 
         [AllowAnonymous]

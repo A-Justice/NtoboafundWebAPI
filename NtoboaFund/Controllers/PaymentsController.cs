@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NtoboaFund.Data.DBContext;
 using NtoboaFund.Data.Models;
+using NtoboaFund.Helpers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace NtoboaFund.Controllers
 {
@@ -14,18 +14,18 @@ namespace NtoboaFund.Controllers
     [ApiController]
     public class PaymentsController : ControllerBase
     {
-        private readonly NtoboaFundDbContext _context;
+        private readonly NtoboaFundDbContext dbContext;
 
         public PaymentsController(NtoboaFundDbContext context)
         {
-            _context = context;
+            dbContext = context;
         }
 
         // GET: api/Payments
         [HttpGet]
         public IEnumerable<Payment> GetPayments()
         {
-            return _context.Payments;
+            return dbContext.Payments;
         }
 
         // GET: api/Payments/5
@@ -37,7 +37,7 @@ namespace NtoboaFund.Controllers
                 return BadRequest(ModelState);
             }
 
-            var payment = await _context.Payments.FindAsync(id);
+            var payment = await dbContext.Payments.FindAsync(id);
 
             if (payment == null)
             {
@@ -47,14 +47,16 @@ namespace NtoboaFund.Controllers
             return Ok(payment);
         }
 
+
         [HttpGet("bydetails/{itemPayedFor}/{itemPayedForId}")]
         public async Task<IActionResult> GetPaymentByDetails([FromRoute]string itemPayedFor, [FromRoute]int itemPayedForId)
         {
-            var oldSamePayment = _context.Payments.Where(i => i.ItemPayedFor == itemPayedFor && i.ItemPayedForId == itemPayedForId).FirstOrDefault();
+            var oldSamePayment = dbContext.Payments.Where(i => i.ItemPayedFor == itemPayedFor && i.ItemPayedForId == itemPayedForId).FirstOrDefault();
 
             return Ok(oldSamePayment);
 
         }
+
         // PUT: api/Payments/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutPayment([FromRoute] int id, [FromBody] Payment payment)
@@ -72,12 +74,12 @@ namespace NtoboaFund.Controllers
 
             try
             {
-                _context.Entry(payment).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
+                dbContext.Entry(payment).State = EntityState.Modified;
+                await dbContext.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                Console.WriteLine(ex.Message);
+                //Console.WriteLine(ex.Message);
                 if (!PaymentExists(id))
                 {
                     return NotFound();
@@ -95,28 +97,54 @@ namespace NtoboaFund.Controllers
         [HttpPost]
         public async Task<IActionResult> PostPayment([FromBody] Payment payment)
         {
-            
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
             payment.DatePayed = DateTime.Now;
-            var oldSamePayment = _context.Payments.Where(i=>i.ItemPayedFor==payment.ItemPayedFor && i.ItemPayedForId == payment.ItemPayedForId).FirstOrDefault();
-            if(oldSamePayment == null)
+            var oldSamePayment = dbContext.Payments.Where(i => i.ItemPayedFor == payment.ItemPayedFor && i.ItemPayedForId == payment.ItemPayedForId).FirstOrDefault();
+            if (oldSamePayment == null)
             {
-                _context.Payments.Add(payment);
+                dbContext.Payments.Add(payment);
             }
             else
             {
                 oldSamePayment.TransactionId = payment.TransactionId;
                 oldSamePayment.DatePayed = payment.DatePayed;
                 oldSamePayment.PayerId = payment.PayerId;
-                _context.Entry(oldSamePayment).State = EntityState.Modified;
+                dbContext.Entry(oldSamePayment).State = EntityState.Modified;
             }
 
-                await _context.SaveChangesAsync();
-                return CreatedAtAction("GetPayment", new { id = payment.PaymentId }, payment);
-           
+            await dbContext.SaveChangesAsync();
+            return CreatedAtAction("GetPayment", new { id = payment.PaymentId }, payment);
+
+        }
+
+
+        [HttpGet("congratmsg/{type}/{txRef}")]
+        public async Task<ActionResult<string>> GetCongratulatoryMessage(string type, string txRef)
+        {
+            string message = "";
+            if (type == "lkm")
+            {
+                var luckyMe = dbContext.LuckyMes.Where(i => i.TxRef == txRef).FirstOrDefault();
+                message = Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period);
+
+            }
+            else if (type == "bus")
+            {
+                var business = dbContext.Businesses.Where(i => i.TxRef == txRef).FirstOrDefault();
+                message = Misc.GetDrawMessage(EntityTypes.Business, business.Amount, business.Period);
+
+            }
+            else if (type == "sch")
+            {
+                var scholarship = dbContext.Scholarships.Where(i => i.TxRef == txRef).FirstOrDefault();
+                message = Misc.GetDrawMessage(EntityTypes.Scholarship, scholarship.Amount, scholarship.Period);
+
+            }
+            return Ok(new { message = message });
         }
 
         // DELETE: api/Payments/5
@@ -128,21 +156,21 @@ namespace NtoboaFund.Controllers
                 return BadRequest(ModelState);
             }
 
-            var payment = await _context.Payments.FindAsync(id);
+            var payment = await dbContext.Payments.FindAsync(id);
             if (payment == null)
             {
                 return NotFound();
             }
 
-            _context.Payments.Remove(payment);
-            await _context.SaveChangesAsync();
+            dbContext.Payments.Remove(payment);
+            await dbContext.SaveChangesAsync();
 
             return Ok(payment);
         }
 
         private bool PaymentExists(int id)
         {
-            return _context.Payments.Any(e => e.PaymentId == id);
+            return dbContext.Payments.Any(e => e.PaymentId == id);
         }
     }
 }

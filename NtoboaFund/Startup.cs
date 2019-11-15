@@ -179,7 +179,7 @@ namespace NtoboaFund
                 user.Email = "admin@ntoboafund.com";
 
                 IdentityResult result = userManager.CreateAsync
-                (user, ".ntobaofundadmin.").Result;
+                (user, ".ntoboafundadmin.").Result;
 
                 if (result.Succeeded)
                 {

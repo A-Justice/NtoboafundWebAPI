@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using NtoboaFund.Helpers;
 using SendGrid;
 using SendGrid.Helpers.Mail;
@@ -73,24 +72,15 @@ namespace NtoboaFund.Services
 
         public void SendMNotifySms(string phoneNumber, string message)
         {
-            string url = "https://api.mnotify.com/api/sms/quick";
+            phoneNumber = Misc.FormatGhanaianPhoneNumber(phoneNumber);
+            string url = $"https://apps.mnotify.net/smsapi?key={AppSetting.MNotifySettings.ApiKey}&to={phoneNumber}&msg={message}&sender_id=NtoboaFund";
 
-            var payload = new
-            {
-                key = AppSetting.MNotifySettings.ApiKey,
-                recipent = new string[] { Misc.FormatPhoneNumber(phoneNumber) },
-                sender = "Ntoboafund",
-                message = message,
-                is_schedule = false
-            };
 
             var httpClient = new HttpClient();
 
             try
             {
-                var payloadString = JsonConvert.SerializeObject(payload);
-
-                HttpResponseMessage response = httpClient.PostAsync(url, new StringContent(payloadString)).Result;
+                HttpResponseMessage response = httpClient.GetAsync(url).Result;
 
             }
             catch (Exception ex)

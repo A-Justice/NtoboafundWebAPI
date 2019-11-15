@@ -34,6 +34,12 @@ namespace NtoboaFund.Data.Models
         [Required]
         public string StudentId { get; set; }
 
+        /// <summary>
+        /// Player type can either be parent or
+        /// </summary>
+        [Required]
+        public string PlayerType { get; set; }
+
         public int? TransferId { get; set; }
 
         public string TxRef { get; set; }

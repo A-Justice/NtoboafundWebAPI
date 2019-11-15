@@ -23,7 +23,7 @@ namespace NtoboaFund.Services
     {
         ApplicationUser Authenticate(string username, string password);
 
-        Task<Tuple<ApplicationUser, string>> Register(RegistrationDTO user);
+        Task<Tuple<ApplicationUser, string>> Register(RegistrationDTO user, bool IsUssdUser = false);
 
         ApplicationUser EditUser(UserEditDTO user);
 
@@ -95,9 +95,12 @@ namespace NtoboaFund.Services
             return user;
         }
 
-        public async Task<Tuple<ApplicationUser, string>> Register(RegistrationDTO regUser)
+        public async Task<Tuple<ApplicationUser, string>> Register(RegistrationDTO regUser, bool IsUssdUser = false)
         {
             ApplicationUser user = null;
+
+            //Normalize the phoneNumber
+            regUser.PhoneNumber = "0" + Misc.NormalizePhoneNumber(regUser.PhoneNumber);
 
             var User = dbContext.Users.FirstOrDefault(x => x.Email == regUser.Email);
 
@@ -106,12 +109,48 @@ namespace NtoboaFund.Services
                 return Tuple.Create<ApplicationUser, string>(null, "User With Same Email Exists");
             }
 
+            User = dbContext.Users.FirstOrDefault(x => Misc.NormalizePhoneNumber(x.PhoneNumber) == Misc.NormalizePhoneNumber(regUser.PhoneNumber) && x.FirstName != regUser.PhoneNumber);
+            if (User != null)
+            {
+                return Tuple.Create<ApplicationUser, string>(null, "User With Same Phone Number Exists");
+            }
+
             if (regUser.Password != regUser.ConfirmPassword)
             {
                 return Tuple.Create<ApplicationUser, string>(null, "Passwords Do Not Match");
             }
 
+            User = dbContext.Users.FirstOrDefault(x => Misc.NormalizePhoneNumber(x.PhoneNumber) == Misc.NormalizePhoneNumber(regUser.PhoneNumber) && x.FirstName == regUser.PhoneNumber);
+
+            if (User != null)
+            {
+                var userEditDTO = new UserEditDTO
+                {
+                    Id = User.Id,
+                    FirstName = regUser.FirstName,
+                    LastName = regUser.LastName,
+                    PhoneNumber = regUser.PhoneNumber,
+                    Email = regUser.Email
+                };
+
+                User = EditUser(userEditDTO);
+
+                await ChangePasswordAsync(User, regUser.PhoneNumber, regUser.Password);
+
+                return Tuple.Create<ApplicationUser, string>(User, null);
+
+            }
+
+
             var momoDetails = new MobileMoneyDetails();
+            if (IsUssdUser)
+            {
+                momoDetails.Country = "GH";
+                momoDetails.Currency = "GHS";
+                momoDetails.Network = Misc.getNetwork(regUser.PhoneNumber);
+                momoDetails.Number = regUser.PhoneNumber;
+
+            }
             dbContext.MobileMoneyDetails.Add(momoDetails);
             var bankDetails = new BankDetails();
             dbContext.BankDetails.Add(bankDetails);
@@ -126,6 +165,13 @@ namespace NtoboaFund.Services
                 MomoDetails = momoDetails,
                 BankDetails = bankDetails
             };
+
+            if (IsUssdUser)
+            {
+                user.PreferedMoneyReceptionMethod = "momo";
+            }
+
+
 
             if (regUser.Images?.Length > 0)
             {
@@ -245,10 +291,14 @@ namespace NtoboaFund.Services
 
         public ApplicationUser EditUser(UserEditDTO regUser)
         {
+            regUser.PhoneNumber = "0" + Misc.NormalizePhoneNumber(regUser.PhoneNumber);
             var user = dbContext.Users.Find(regUser.Id);
+            user.UserName = regUser.Email;
+            user.NormalizedUserName = regUser.Email.ToUpper();
             user.FirstName = regUser.FirstName == "null" ? null : regUser.FirstName;
             user.LastName = regUser.LastName == "null" ? null : regUser.LastName;
             user.Email = regUser.Email == "null" ? null : regUser.Email;
+            user.NormalizedEmail = regUser.Email.ToUpper();
             user.PhoneNumber = regUser.PhoneNumber == "null" ? null : regUser.PhoneNumber;
 
             if (user.MomoDetails == null)
