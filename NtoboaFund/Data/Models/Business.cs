@@ -2,7 +2,7 @@
 
 namespace NtoboaFund.Data.Models
 {
-    public class Business
+    public class Business : IStakeType
     {
         public int Id { get; set; }
 

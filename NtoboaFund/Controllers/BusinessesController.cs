@@ -143,7 +143,11 @@ namespace NtoboaFund.Controllers
 
             await dbContext.SaveChangesAsync();
 
-            return CreatedAtAction("GetBusiness", new { id = business.Id }, business);
+            //if (Constants.PaymentGateway == PaymentGateway.slydepay)
+            //    return Ok(new { id = business.Id, paymentToken = Misc.GenerateSlydePayToken(EntityTypes.Business,business, AppSettings.SlydePaySettings) });
+            //else
+            return Ok(new { id = business.Id });
+
         }
 
         // DELETE: api/Businesses/5

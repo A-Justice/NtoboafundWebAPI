@@ -1,14 +1,21 @@
 ﻿namespace NtoboaFund.Helpers
 {
+    public enum PaymentGateway
+    {
+        flutterwave,
+        slydepay,
+        redde,
+    }
     public static class Constants
     {
+        public static PaymentGateway PaymentGateway { get; set; } = PaymentGateway.redde;
         public static int ScholarshipStakeOdds { get; set; } = 100;
         public static int BusinessStakeOdds { get; set; } = 10;
         public static int LuckymeStakeOdds { get; set; } = 10;
 
         public static int[] LuckyMeStakes { get; set; } = { 1, 5, 10, 20, 50, 100, 500 };
 
-        public static int[] ScholarshipStakes { get; set; } = { 100, 50, 20 };
+        public static int[] ScholarshipStakes { get; set; } = { 20, 50, 100 };
 
         public static int[] BusinessStakes { get; set; } = { 100, 500, 1000, 2000 };
 

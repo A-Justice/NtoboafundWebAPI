@@ -110,9 +110,6 @@ namespace NtoboaFund.Controllers
             }
             else
             {
-                oldSamePayment.TransactionId = payment.TransactionId;
-                oldSamePayment.DatePayed = payment.DatePayed;
-                oldSamePayment.PayerId = payment.PayerId;
                 dbContext.Entry(oldSamePayment).State = EntityState.Modified;
             }
 

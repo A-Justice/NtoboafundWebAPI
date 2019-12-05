@@ -22,6 +22,9 @@ namespace NtoboaFund.Services
 
         public async Task SendMail(string userName, string To, string MailSubject, string MailBody)
         {
+
+            //return;
+
             if (string.IsNullOrEmpty(To))
                 return;
 
@@ -64,6 +67,8 @@ namespace NtoboaFund.Services
 
         public async Task SendSms(string phoneNumber, string message)
         {
+            //return;
+
             if (string.IsNullOrEmpty(phoneNumber))
                 return;
 

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NtoboaFund.Data.Models
 {
-    public class Scholarship
+    public class Scholarship : IStakeType
     {
         public int Id { get; set; }
 

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using NtoboaFund.Data.DBContext;
 using NtoboaFund.Data.DTO_s;
 using NtoboaFund.Data.Models;
@@ -50,52 +51,222 @@ namespace NtoboaFund.Controllers
 
         }
 
+        /// <summary>
+        /// Makes Luckyme Payment On Slide Pay
+        /// </summary>
+        /// <param name="txRef">The reference of that transaction</param>
+        /// <param name="paymentType">The type of payment as a string</param>
+        /// <param name="momoOrEmail">The Mobile Money Number to be used for the transaction</param>
+        /// <returns></returns>
+        [HttpPost("payforluckyme/{txRef}/{paymentType}/{momoOrEmail}/{isredirected}")]
+        public async Task<IActionResult> PayForLuckyMe(string txRef, string paymentType, string momoOrEmail, bool isredirected = false)
+        {
+            var luckyMe = dbContext.LuckyMes.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+            if (luckyMe == null)
+            {
+                return BadRequest(new { message = "This Lucky Me Transaction Was Not Found" });
+            }
+            string paymentToken = null;
+
+            if (paymentType == "MobileMoney" && momoOrEmail != null)
+            {
+                if (Constants.PaymentGateway == PaymentGateway.slydepay)
+                    paymentToken = await Misc.GenerateAndSendSlydePayMomoInvoice(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings, momoOrEmail);
+                else if (Constants.PaymentGateway == PaymentGateway.redde)
+                    paymentToken = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Luckyme, luckyMe, AppSettings.ReddeSettings, momoOrEmail);
+
+            }
+            else if (paymentType == "CreditCard")
+            {
+                if (Constants.PaymentGateway == PaymentGateway.slydepay)
+                {
+                    if (!isredirected)
+                        paymentToken = await Misc.GenerateAndSendSlydePayCardInvoice(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings, momoOrEmail);
+                    else
+                        paymentToken = await Misc.GenerateSlydePayToken(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings);
+
+                }
+                else if (Constants.PaymentGateway == PaymentGateway.redde)
+                {
+                    if (!isredirected)
+                    {
+                        // paymentToken = await Misc.GenerateAndSendSlydePayCardInvoice(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings, momoOrEmail);
+
+                    }
+                    else
+                        paymentToken = await Misc.GenerateReddeToken(EntityTypes.Luckyme, luckyMe, AppSettings.ReddeSettings);
+
+                }
+
+            }
+            else if (paymentType == "SlydePay" && Constants.PaymentGateway == PaymentGateway.slydepay)
+                paymentToken = await Misc.GenerateAndSendSlydePayAnkasaInvoice(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings);
+
+
+
+
+            if (paymentToken == null)
+                return BadRequest(new { message = "Payment Failed" });
+            //else
+            //    await Misc.ConfirmSlydePayTransaction(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings);
+
+            return Ok(new { txRef, paymentToken });
+        }
+
+        [HttpPost("payforbusiness/{txRef}/{paymentType}/{momoOrEmail}/{isredirected}")]
+        public async Task<IActionResult> PayForBusiness(string txRef, string paymentType, string momoOrEmail, bool isredirected = false)
+        {
+            var business = dbContext.Businesses.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+            if (business == null)
+            {
+                return BadRequest(new { message = "This Business Me Transaction Was Not Found" });
+            }
+            string paymentToken = null;
+
+            if (paymentType == "MobileMoney" && momoOrEmail != null)
+            {
+                if (Constants.PaymentGateway == PaymentGateway.slydepay)
+                    paymentToken = await Misc.GenerateAndSendSlydePayMomoInvoice(EntityTypes.Business, business, AppSettings.SlydePaySettings, momoOrEmail);
+                else if (Constants.PaymentGateway == PaymentGateway.redde)
+                    paymentToken = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Business, business, AppSettings.ReddeSettings, momoOrEmail);
+
+            }
+            else if (paymentType == "CreditCard")
+            {
+                if (Constants.PaymentGateway == PaymentGateway.slydepay)
+                {
+                    if (!isredirected)
+                        paymentToken = await Misc.GenerateAndSendSlydePayCardInvoice(EntityTypes.Business, business, AppSettings.SlydePaySettings, momoOrEmail);
+                    else
+                        paymentToken = await Misc.GenerateSlydePayToken(EntityTypes.Business, business, AppSettings.SlydePaySettings);
+
+                }
+                else if (Constants.PaymentGateway == PaymentGateway.redde)
+                {
+                    if (!isredirected) { }
+                    //paymentToken = await Misc.GenerateAndSendSlydePayCardInvoice(EntityTypes.Business, business, AppSettings.SlydePaySettings, momoOrEmail);
+                    else
+                        paymentToken = await Misc.GenerateReddeToken(EntityTypes.Business, business, AppSettings.ReddeSettings);
+                }
+
+            }
+            else if (paymentType == "SlydePay" && Constants.PaymentGateway == PaymentGateway.slydepay)
+                paymentToken = await Misc.GenerateAndSendSlydePayAnkasaInvoice(EntityTypes.Business, business, AppSettings.SlydePaySettings);
+
+            if (paymentToken == null)
+                return BadRequest(new { message = "Payment Failed" });
+            //else
+            //    await Misc.ConfirmSlydePayTransaction(EntityTypes.Business, business, AppSettings.SlydePaySettings);
+
+
+            return Ok(new { txRef, paymentToken });
+        }
+
+        [HttpPost("payforscholarship/{txRef}/{paymentType}/{momoOrEmail}/{isredirected}")]
+        public async Task<IActionResult> PayForScholarship(string txRef, string paymentType, string momoOrEmail, bool isredirected = false)
+        {
+            var scholarship = dbContext.Scholarships.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+            if (scholarship == null)
+            {
+                return BadRequest(new { message = "This Scholarship Transaction Was Not Found" });
+            }
+            string paymentToken = null;
+
+            if (paymentType == "MobileMoney" && momoOrEmail != null)
+            {
+                if (Constants.PaymentGateway == PaymentGateway.slydepay)
+                    paymentToken = await Misc.GenerateAndSendSlydePayMomoInvoice(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings, momoOrEmail);
+                else if (Constants.PaymentGateway == PaymentGateway.redde)
+                    paymentToken = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Scholarship, scholarship, AppSettings.ReddeSettings, momoOrEmail);
+
+            }
+            else if (paymentType == "CreditCard")
+            {
+                if (Constants.PaymentGateway == PaymentGateway.slydepay)
+                {
+                    if (!isredirected)
+                        paymentToken = await Misc.GenerateAndSendSlydePayCardInvoice(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings, momoOrEmail);
+                    else
+                        paymentToken = await Misc.GenerateSlydePayToken(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings);
+
+                }
+                else if (Constants.PaymentGateway == PaymentGateway.redde)
+                {
+                    if (!isredirected) { }
+                    //paymentToken = await Misc.GenerateAndSendSlydePayCardInvoice(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings, momoOrEmail);
+                    else
+                        paymentToken = await Misc.GenerateReddeToken(EntityTypes.Scholarship, scholarship, AppSettings.ReddeSettings);
+
+                }
+            }
+            else if (paymentType == "SlydePay" && Constants.PaymentGateway == PaymentGateway.slydepay)
+                paymentToken = await Misc.GenerateAndSendSlydePayAnkasaInvoice(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings);
+
+            if (paymentToken == null)
+                return BadRequest(new { message = "Payment Failed" });
+            //else
+            //    await Misc.ConfirmSlydePayTransaction(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings);
+
+            return Ok(new { txRef, paymentToken });
+        }
+
 
         [HttpPost("verifyLuckymePayment/{txRef}")]
-        public async Task<IActionResult> VerifyLuckymePayment(string txRef /*, [FromBody]LuckyMe luckyMe*/)
+        public async Task<IActionResult> VerifyLuckymePayment(string txRef, string status = null /*, [FromBody]LuckyMe luckyMe*/)
         {
             lock (locker)
             {
-                var luckyMe = dbContext.LuckyMes.Where(i => i.TxRef == txRef && i.Status.ToLower() == "pending").Include("User").FirstOrDefault();
-
+                var luckyMe = dbContext.LuckyMes.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
                 if (luckyMe == null)
                 {
-                    if (dbContext.LuckyMes.Where(i => i.TxRef == txRef && i.Status.ToLower() == "paid").FirstOrDefault() != null)
-                    {
-                        return Ok(new { message = "LuckyMe Already Verified" });
-                    }
-                    else
-                        return BadRequest(new { errorString = "luckyMe stake was not found" });
+                    return BadRequest(new { status = "", errorString = "luckyMe stake was not found" });
+                }
+                else if (luckyMe.Status.ToLower() == "paid" || luckyMe.Status.ToLower() == "won" || luckyMe.Status.ToLower() == "wins")
+                {
+                    return Ok(new { luckyMe.Status, message = "LuckyMe Already Verified" });
                 }
 
-
-                luckyMe.User.Points += luckyMe.Amount * Constants.PointConstant;
-
-
-
-                string resultString = null;
                 string errorString = null;
 
                 try
                 {
-                    if (VerifyPayment(txRef))
+                    var VResult = VerifyPayment(txRef, status).Result;
+                    if (VResult.isConfirmed)
                     {
                         if (luckyMe.Status == "paid")
-                            return Ok(new { luckyMe, resultString, errorString });
+                            return Ok(new { luckyMe, errorString });
 
                         luckyMe.Status = "paid";
+                        luckyMe.User.Points += luckyMe.Amount * Constants.PointConstant;
+                        luckyMe.DateDeclared = Misc.GetDrawDate(EntityTypes.Luckyme, luckyMe.Period);
+                        if (Constants.PaymentGateway == PaymentGateway.slydepay)
+                        {
+                            Task.Run(async () =>
+                        {
+                            await Misc.ConfirmSlydePayTransaction(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings);
 
+                        });
+                        }
                     }
                     else
                     {
-                        luckyMe.Status = "failed";
+                        if (VResult.message == "PENDING" || VResult.message == "PROGRESS" || VResult.message == "NEW")
+                        {
+
+                        }
+                        else
+                            luckyMe.Status = "failed";
                     }
+                    dbContext.Entry(luckyMe).State = EntityState.Modified;
                     dbContext.SaveChanges();
 
                     if (luckyMe.User != null && luckyMe.Status.ToLower() == "paid") //send the currently added participant to all clients
                     {
                         if (luckyMe.Period.ToLower() == "daily")
                         {
+                            //Send an Email to the User
+                            MessagingService.SendMail(luckyMe.User.FirstName + luckyMe.User.LastName, luckyMe.User.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
+
                             //Send as sms to the user
                             MessagingService.SendSms(luckyMe.User.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
 
@@ -108,7 +279,8 @@ namespace NtoboaFund.Controllers
                                AmountStaked = luckyMe.Amount.ToString("0.##"),
                                AmountToWin = luckyMe.AmountToWin.ToString("0.##"),
                                Status = luckyMe.Status.ToLower(),
-                               DateDeclared = luckyMe.DateDeclared
+                               DateDeclared = luckyMe.DateDeclared,
+                               TxRef = luckyMe.TxRef
                            });
 
                             foreach (var dummy in DataHub.ManageDummies(EntityTypes.Luckyme, Period.Daily))
@@ -123,13 +295,15 @@ namespace NtoboaFund.Controllers
                                     AmountStaked = luckymeDailyDummy.Amount.ToString("0.##"),
                                     AmountToWin = luckymeDailyDummy.AmountToWin.ToString("0.##"),
                                     Status = luckymeDailyDummy.Status.ToLower(),
-                                    DateDeclared = luckymeDailyDummy.DateDeclared
+                                    DateDeclared = luckymeDailyDummy.DateDeclared,
+                                    TxRef = luckymeDailyDummy.TxRef
                                 });
                             }
                         }
                         else if (luckyMe.Period.ToLower() == "weekly")
                         {
                             //Send as sms to the user
+                            MessagingService.SendMail(luckyMe.User.FirstName + luckyMe.User.LastName, luckyMe.User.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
                             MessagingService.SendSms(luckyMe.User.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
 
 
@@ -142,7 +316,8 @@ namespace NtoboaFund.Controllers
                                   AmountStaked = luckyMe.Amount.ToString("0.##"),
                                   AmountToWin = luckyMe.AmountToWin.ToString("0.##"),
                                   Status = luckyMe.Status.ToLower(),
-                                  DateDeclared = luckyMe.DateDeclared
+                                  DateDeclared = luckyMe.DateDeclared,
+                                  TxRef = luckyMe.TxRef
                               });
 
                             //InsertLuckyMe dummies and Propagate them to user
@@ -158,13 +333,18 @@ namespace NtoboaFund.Controllers
                                    AmountStaked = luckymeWeeklyDummy.Amount.ToString("0.##"),
                                    AmountToWin = luckymeWeeklyDummy.AmountToWin.ToString("0.##"),
                                    Status = luckymeWeeklyDummy.Status.ToLower(),
-                                   DateDeclared = luckymeWeeklyDummy.DateDeclared
+                                   DateDeclared = luckymeWeeklyDummy.DateDeclared,
+                                   TxRef = luckymeWeeklyDummy.TxRef
+
                                });
                             }
 
                         }
                         else if (luckyMe.Period.ToLower() == "monthly")
                         {
+                            //Send an Email to the User
+                            MessagingService.SendMail(luckyMe.User.FirstName + luckyMe.User.LastName, luckyMe.User.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
+
                             //Send as sms to the user
                             MessagingService.SendSms(luckyMe.User.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
 
@@ -177,7 +357,8 @@ namespace NtoboaFund.Controllers
                                   AmountStaked = luckyMe.Amount.ToString("0.##"),
                                   AmountToWin = luckyMe.AmountToWin.ToString("0.##"),
                                   Status = luckyMe.Status.ToLower(),
-                                  DateDeclared = luckyMe.DateDeclared
+                                  DateDeclared = luckyMe.DateDeclared,
+                                  TxRef = luckyMe.TxRef
                               });
                             //InsertLuckyMe dummies and Propagate them to user
                             foreach (var dummy in DataHub.ManageDummies(EntityTypes.Luckyme, Period.Monthly))
@@ -192,7 +373,9 @@ namespace NtoboaFund.Controllers
                                    AmountStaked = luckymeMonthlyDummy.Amount.ToString("0.##"),
                                    AmountToWin = luckymeMonthlyDummy.AmountToWin.ToString("0.##"),
                                    Status = luckymeMonthlyDummy.Status.ToLower(),
-                                   DateDeclared = luckymeMonthlyDummy.DateDeclared
+                                   DateDeclared = luckymeMonthlyDummy.DateDeclared,
+                                   TxRef = luckymeMonthlyDummy.TxRef
+
                                });
                             }
 
@@ -206,50 +389,65 @@ namespace NtoboaFund.Controllers
                     errorString = ex.Message;
                 }
 
-                return Ok(new { luckyMe, resultString, errorString });
+                return Ok(new { luckyMe.Status, errorString });
 
             }
         }
 
 
         [HttpPost("verifyScholarshipPayment/{txRef}")]
-        public async Task<IActionResult> VerifyScholarshipPayment(string txRef/*, [FromBody]Scholarship scholarship*/)
+        public async Task<IActionResult> VerifyScholarshipPayment(string txRef, string status = null/*, [FromBody]Scholarship scholarship*/)
         {
             lock (locker)
             {
-                var scholarship = dbContext.Scholarships.Where(i => i.TxRef == txRef && i.Status.ToLower() == "pending").Include("User").FirstOrDefault();
+                var scholarship = dbContext.Scholarships.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
 
                 if (scholarship == null)
                 {
-                    if (dbContext.Scholarships.Where(i => i.TxRef == txRef && i.Status.ToLower() == "paid").FirstOrDefault() != null)
-                    {
-                        return Ok(new { message = "Scholarship Already Verified" });
-                    }
-                    else
-                        return BadRequest(new { errorString = "Scholarship stake was not found" });
+                    return BadRequest(new { status = "", errorString = "Scholarship stake was not found" });
+                }
+                else if (scholarship.Status.ToLower() == "paid" || scholarship.Status.ToLower() == "won" || scholarship.Status.ToLower() == "wins")
+                {
+                    return Ok(new { scholarship.Status, message = "Scholarship Already Verified" });
                 }
 
-                scholarship.User.Points += scholarship.Amount * Constants.PointConstant;
 
 
-                string resultString = null;
+
+                //string resultString = null;
                 string errorString = null;
 
                 try
                 {
-                    if (VerifyPayment(txRef))
+                    var VResult = VerifyPayment(txRef, status).Result;
+                    if (VResult.isConfirmed)
                     {
                         if (scholarship.Status == "paid")
-                            return Ok(new { scholarship, resultString, errorString });
+                            return Ok(new { scholarship.Status, errorString });
 
                         scholarship.Status = "paid";
+                        scholarship.User.Points += scholarship.Amount * Constants.PointConstant;
+                        scholarship.DateDeclared = Misc.GetDrawDate(EntityTypes.Scholarship, scholarship.Period);
+                        if (Constants.PaymentGateway == PaymentGateway.slydepay)
+                        {
+                            Task.Run(async () =>
+                            {
+                                await Misc.ConfirmSlydePayTransaction(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings);
 
+                            });
+                        }
                     }
                     else
                     {
-                        scholarship.Status = "failed";
+                        if (VResult.message == "PENDING" || VResult.message == "PROGRESS" || VResult.message == "NEW")
+                        {
+
+                        }
+                        else
+                            scholarship.Status = "failed";
                     }
 
+                    dbContext.Entry(scholarship).State = EntityState.Modified;
                     dbContext.SaveChanges();
                     //Find the current user associated with the scholarship
 
@@ -257,6 +455,9 @@ namespace NtoboaFund.Controllers
                     //send the currently added participant to all clients
                     if (scholarship.User != null && scholarship.Status.ToLower() == "paid")
                     {
+                        //Send an Email to the User
+                        MessagingService.SendMail(scholarship.User.FirstName + scholarship.User.LastName, scholarship.User.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Scholarship, scholarship.Amount, scholarship.Period));
+
                         //Send as sms to the user
                         MessagingService.SendSms(scholarship.User.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Scholarship, scholarship.Amount, scholarship.Period));
 
@@ -268,7 +469,10 @@ namespace NtoboaFund.Controllers
                               UserName = scholarship.User.FirstName + " " + scholarship.User.LastName,
                               AmountStaked = scholarship.Amount.ToString("0.##"),
                               AmountToWin = scholarship.AmountToWin.ToString("0.##"),
-                              Status = scholarship.Status.ToLower()
+                              Status = scholarship.Status.ToLower(),
+                              DateDeclared = scholarship.DateDeclared,
+                              TxRef = scholarship.TxRef
+
                           });
                         //Insert Scholarship dummies and Propagate them to user
                         foreach (var dummy in DataHub.ManageDummies(EntityTypes.Scholarship, null))
@@ -283,7 +487,8 @@ namespace NtoboaFund.Controllers
                                AmountStaked = ScholarshipDummy.Amount.ToString("0.##"),
                                AmountToWin = ScholarshipDummy.AmountToWin.ToString("0.##"),
                                Status = ScholarshipDummy.Status.ToLower(),
-                               DateDeclared = ScholarshipDummy.DateDeclared
+                               DateDeclared = ScholarshipDummy.DateDeclared,
+                               TxRef = ScholarshipDummy.TxRef
                            });
                         }
 
@@ -302,89 +507,112 @@ namespace NtoboaFund.Controllers
 
 
                 //  return Ok(hubtelresponse?.data?.checkoutUrl);
-                return Ok(new { scholarship, resultString, errorString });
+                return Ok(new { scholarship.Status, errorString });
             }
         }
 
 
         [HttpPost("verifyBusinessPayment/{txRef}")]
-        public async Task<IActionResult> VerifyBusinessPayment(string txRef/*, [FromBody]Business business*/)
+        public async Task<IActionResult> VerifyBusinessPayment(string txRef, string status = null/*, [FromBody]Business business*/)
         {
             lock (locker)
             {
-                var business = dbContext.Businesses.Where(i => i.TxRef == txRef && i.Status.ToLower() == "pending").Include("User").FirstOrDefault();
-
+                var business = dbContext.Businesses.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
                 if (business == null)
                 {
-                    if (dbContext.Businesses.Where(i => i.TxRef == txRef && i.Status.ToLower() == "paid").FirstOrDefault() != null)
-                    {
-                        return Ok(new { message = "Business Already Verified" });
-                    }
-                    else
-                        return BadRequest(new { errorString = "Business stake was not found" });
+                    return BadRequest(new { status = "", errorString = "Business stake was not found" });
+                }
+                else if (business.Status.ToLower() == "paid" || business.Status.ToLower() == "won" || business.Status.ToLower() == "wins")
+                {
+                    return Ok(new { business.Status, message = "Business Already Verified" });
                 }
 
-                business.User.Points += business.Amount * Constants.PointConstant;
 
 
 
-                string resultString = null;
+                // string resultString = null;
                 string errorString = null;
 
                 try
                 {
-
-                    if (VerifyPayment(txRef))
+                    var VResult = VerifyPayment(txRef, status).Result;
+                    if (VResult.isConfirmed)
                     {
                         if (business.Status == "paid")
-                            return Ok(new { business, resultString, errorString });
+                            return Ok(new { business.Status, errorString });
 
                         business.Status = "paid";
+                        business.User.Points += business.Amount * Constants.PointConstant;
+                        business.DateDeclared = Misc.GetDrawDate(EntityTypes.Business, business.Period);
+                        if (Constants.PaymentGateway == PaymentGateway.slydepay)
+                        {
+                            Task.Run(async () =>
+                            {
+                                await Misc.ConfirmSlydePayTransaction(EntityTypes.Business, business, AppSettings.SlydePaySettings);
+
+                            });
+                        }
 
                     }
                     else
                     {
-                        business.Status = "failed";
+                        if (VResult.message == "PENDING" || VResult.message == "PROGRESS" || VResult.message == "NEW")
+                        {
+
+                        }
+                        else
+                            business.Status = "failed";
                     }
 
 
-
+                    dbContext.Entry(business).State = EntityState.Modified;
                     dbContext.SaveChanges();
                     //Find the current user associated with the business
 
                     if (business.User != null && business.Status.ToLower() == "paid") //send the currently added participant to all clients
+                    {
+                        //Send an Email to the User
+                        MessagingService.SendMail(business.User.FirstName + business.User.LastName, business.User.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Business, business.Amount, business.Period));
 
                         //Send as sms to the user
                         MessagingService.SendSms(business.User.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Business, business.Amount, business.Period));
 
-                    StakersHub.Clients.All.SendAsync("addbusinessparticipant",
-                            new BusinessParticipantDTO
-                            {
-                                Id = business.Id,
-                                UserId = business.User.Id,
-                                UserName = business.User.FirstName + " " + business.User.LastName,
-                                AmountStaked = business.Amount.ToString("0.##"),
-                                AmountToWin = business.AmountToWin.ToString("0.##"),
-                                Status = business.Status.ToLower()
-                            });
-
-                    //Insert Business dummies and Propagate them to user
-                    foreach (var dummy in DataHub.ManageDummies(EntityTypes.Business, null))
-                    {
-                        var BusinessDummy = dummy as Business;
                         StakersHub.Clients.All.SendAsync("addbusinessparticipant",
-                       new BusinessParticipantDTO
-                       {
-                           Id = BusinessDummy.Id,
-                           UserId = BusinessDummy.User.Id,
-                           UserName = BusinessDummy.User.FirstName + " " + BusinessDummy.User.LastName,
-                           AmountStaked = BusinessDummy.Amount.ToString("0.##"),
-                           AmountToWin = BusinessDummy.AmountToWin.ToString("0.##"),
-                           Status = BusinessDummy.Status.ToLower(),
-                           DateDeclared = BusinessDummy.DateDeclared
-                       });
-                    }
+                                new BusinessParticipantDTO
+                                {
+                                    Id = business.Id,
+                                    UserId = business.User.Id,
+                                    UserName = business.User.FirstName + " " + business.User.LastName,
+                                    AmountStaked = business.Amount.ToString("0.##"),
+                                    AmountToWin = business.AmountToWin.ToString("0.##"),
+                                    Status = business.Status.ToLower(),
+                                    DateDeclared = business.DateDeclared,
+                                    TxRef = business.TxRef
+                                });
 
+                        //Insert Business dummies and Propagate them to user
+                        foreach (var dummy in DataHub.ManageDummies(EntityTypes.Business, null))
+                        {
+                            var BusinessDummy = dummy as Business;
+                            StakersHub.Clients.All.SendAsync("addbusinessparticipant",
+                           new BusinessParticipantDTO
+                           {
+                               Id = BusinessDummy.Id,
+                               UserId = BusinessDummy.User.Id,
+                               UserName = BusinessDummy.User.FirstName + " " + BusinessDummy.User.LastName,
+                               AmountStaked = BusinessDummy.Amount.ToString("0.##"),
+                               AmountToWin = BusinessDummy.AmountToWin.ToString("0.##"),
+                               Status = BusinessDummy.Status.ToLower(),
+                               DateDeclared = BusinessDummy.DateDeclared,
+                               TxRef = BusinessDummy.TxRef
+                           });
+                        }
+
+                    }
+                    else if (business.Status.ToLower() != "paid")
+                    {
+                        errorString = "Payment Could not be verfied";
+                    }
 
                     //resultString = GenerateHubtelUrl(business.Id, business.Amount, "business");
                 }
@@ -396,8 +624,90 @@ namespace NtoboaFund.Controllers
 
 
                 //  return Ok(hubtelresponse?.data?.checkoutUrl);
-                return Ok(new { business, resultString, errorString });
+                return Ok(new { business.Status, errorString });
             }
+        }
+
+
+        [HttpPost("cancelluckymetransaction/{txRef}")]
+        public async Task<IActionResult> CancelLuckymeTransaction(string txRef)
+        {
+            var luckyMe = dbContext.LuckyMes.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+
+            if (luckyMe == null)
+            {
+                return BadRequest("Luckyme not Found");
+            }
+            if (luckyMe.Status != "paid")
+            {
+                luckyMe.Status = "failed";
+                return Ok("CANCELLED");
+            }
+            else
+            {
+                var result = await Misc.CancelSlydePayTransaction(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings);
+
+                if (result.Result == "CANCELLED")
+                    return Ok(result.Result);
+                else
+                    return BadRequest(result.ErrorCode);
+            }
+
+
+        }
+
+        [HttpPost("cancelbusinesstransaction/{txRef}")]
+        public async Task<IActionResult> CancelBusinessTransaction(string txRef)
+        {
+            var business = dbContext.Businesses.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+
+            if (business == null)
+            {
+                return BadRequest("Business not Found");
+            }
+            if (business.Status != "paid")
+            {
+                business.Status = "failed";
+                return Ok("CANCELLED");
+            }
+            else
+            {
+                var result = await Misc.CancelSlydePayTransaction(EntityTypes.Business, business, AppSettings.SlydePaySettings);
+
+                if (result.Result == "CANCELLED")
+                    return Ok(result.Result);
+                else
+                    return BadRequest(result.ErrorCode);
+            }
+
+
+        }
+
+        [HttpPost("cancelscholarshiptransaction/{txRef}")]
+        public async Task<IActionResult> CancelScholarshipTransaction(string txRef)
+        {
+            var scholarship = dbContext.Scholarships.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+
+            if (scholarship == null)
+            {
+                return BadRequest("Scholarship not Found");
+            }
+            if (scholarship.Status != "paid")
+            {
+                scholarship.Status = "failed";
+                return Ok("CANCELLED");
+            }
+            else
+            {
+                var result = await Misc.CancelSlydePayTransaction(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings);
+
+                if (result.Result == "CANCELLED")
+                    return Ok(result.Result);
+                else
+                    return BadRequest(result.ErrorCode);
+            }
+
+
         }
 
         [HttpPost("addpayment")]
@@ -410,7 +720,7 @@ namespace NtoboaFund.Controllers
         }
 
         [HttpPost("ravehook")]
-        public async Task<IActionResult> RaveWebHook(WebhookCallback response)
+        public async Task<IActionResult> RaveWebHook(RaveWebhookCallback response)
         {
             if (await dbContext.LuckyMes.AnyAsync(i => i.TxRef == response.txRef))
             {
@@ -425,11 +735,55 @@ namespace NtoboaFund.Controllers
                 await VerifyScholarshipPayment(response.txRef);
             }
 
+            return Ok();
+        }
+
+        [HttpGet("slydepayhook")]
+        public async Task<IActionResult> SlydePayWebHook([FromQuery] SlydePayWebhookCallback response)
+        {
+            if (await dbContext.LuckyMes.AnyAsync(i => i.TxRef == response.Cust_ref))
+            {
+                await VerifyLuckymePayment(response.Cust_ref);
+            }
+            else if (await dbContext.Businesses.AnyAsync(i => i.TxRef == response.Cust_ref))
+            {
+                await VerifyBusinessPayment(response.Cust_ref);
+            }
+            else if (await dbContext.Scholarships.AnyAsync(i => i.TxRef == response.Cust_ref))
+            {
+                await VerifyScholarshipPayment(response.Cust_ref);
+            }
+
+            return Ok();
+        }
+
+        [HttpPost("redderecievehook")]
+        public async Task<IActionResult> ReddeRecieveWebHook(ReddeRecieveWebhookCallback response)
+        {
+            if (await dbContext.LuckyMes.AnyAsync(i => i.TxRef == response.Clienttransid))
+            {
+                await VerifyLuckymePayment(response.Clienttransid, response.Status);
+            }
+            else if (await dbContext.Businesses.AnyAsync(i => i.TxRef == response.Clienttransid))
+            {
+                await VerifyBusinessPayment(response.Clienttransid, response.Status);
+            }
+            else if (await dbContext.Scholarships.AnyAsync(i => i.TxRef == response.Clienttransid))
+            {
+                await VerifyScholarshipPayment(response.Clienttransid, response.Status);
+            }
+
+            return Ok();
+        }
+
+        [HttpPost("reddecashouthook")]
+        public async Task<IActionResult> ReddeCashoutHook(object obj)
+        {
             return Ok();
         }
 
         [HttpPost("failedravehook")]
-        public async Task<IActionResult> FailedRaveWebHook(WebhookCallback response)
+        public async Task<IActionResult> FailedRaveWebHook(RaveWebhookCallback response)
         {
             if (await dbContext.LuckyMes.AnyAsync(i => i.TxRef == response.txRef))
             {
@@ -447,25 +801,111 @@ namespace NtoboaFund.Controllers
             return Ok();
         }
 
-        bool VerifyPayment(string txRef)
+        [HttpPost("momohook")]
+        public async Task<IActionResult> MomoHook(MomoTransferResponse response)
         {
+            return Ok();
+        }
 
-            var data = new { txref = txRef, SECKEY = AppSettings.FlatterWaveSettings.GetApiSecret() };
-            var client = new HttpClient();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            var responseMessage = client.PostAsJsonAsync("https://api.ravepay.co/flwv3-pug/getpaidx/api/v2/verify", data).Result;
-            //please make sure to change this to production url when you go live
-            var responseStr = responseMessage.Content.ReadAsStringAsync().Result;
-            var response = JsonConvert.DeserializeObject<RaveResponse>(responseStr);
-            if (response.data.status == "successful" && response.data.chargecode == "00")
+        async Task<(string message, bool isConfirmed)> VerifyPayment(string txRef, string status = null)
+        {
+            if (Constants.PaymentGateway == PaymentGateway.flutterwave)
             {
+                var data = new { txref = txRef, SECKEY = AppSettings.FlatterWaveSettings.GetApiSecret() };
+                var client = new HttpClient();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                var responseMessage = client.PostAsJsonAsync("https://api.ravepay.co/flwv3-pug/getpaidx/api/v2/verify", data).Result;
+                //please make sure to change this to production url when you go live
+                var responseStr = responseMessage.Content.ReadAsStringAsync().Result;
+                try
+                {
+                    var response = JsonConvert.DeserializeObject<RaveResponse>(responseStr);
+                    if (response.data.status == "successful" && response.data.chargecode == "00")
+                    {
+                        return (response.data.status, true);
+                    }
 
-                return true;
+                    return (response.data.status, false);
+                }
+                catch
+                {
+                    return ("failed", false);
+                }
 
             }
+            else if (Constants.PaymentGateway == PaymentGateway.slydepay)
+            {
+                var request = new
+                {
+                    EmailOrMobileNumber = AppSettings.SlydePaySettings.MerchantEmail,
+                    MerchantKey = AppSettings.SlydePaySettings.Merchantkey,
+                    OrderCode = txRef,
+                    ConfirmTransaction = true
+                };
 
-            return false;
+                var httpClient = new HttpClient();
 
+
+                var data = JsonConvert.SerializeObject(request, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+                var stringContent = new StringContent(data);
+                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                var responseMessage = await httpClient.PostAsync("https://app.slydepay.com.gh/api/merchant/invoice/checkstatus", stringContent);
+
+                var contentString = await responseMessage.Content.ReadAsStringAsync();
+
+                try
+                {
+                    SlydePayPaymentStatusResponse response = JsonConvert.DeserializeObject<SlydePayPaymentStatusResponse>(contentString);
+
+                    if (response.Result == "PAID")
+                        return ("PAID", true);
+                    else return (response.Result, false);
+                }
+                catch
+                {
+                    return (null, false);
+                }
+
+
+
+            }
+            else if (Constants.PaymentGateway == PaymentGateway.redde)
+            {
+                if (status == "PAID")
+                    return ("PAID", true);
+                else if (status != null)
+                    return (status, false);
+                else
+                {
+
+
+                    var httpClient = new HttpClient();
+
+                    httpClient.DefaultRequestHeaders.Add("apikey", AppSettings.ReddeSettings.ApiKey);
+                    httpClient.DefaultRequestHeaders.Add("appid", AppSettings.ReddeSettings.AppId);
+                    httpClient.DefaultRequestHeaders.Add("Content-Type", "application/json;charset=UTF-8");
+
+                    var responseMessage = await httpClient.GetAsync($"https://api.reddeonline.com/v1/status/{txRef}");
+
+                    var contentString = await responseMessage.Content.ReadAsStringAsync();
+
+                    try
+                    {
+                        ReddeStatusResponse response = JsonConvert.DeserializeObject<ReddeStatusResponse>(contentString);
+
+                        if (response.Status == "PAID")
+                            return ("PAID", false);
+                        else return (response.Status, false);
+                    }
+                    catch
+                    {
+                        return (null, false);
+                    }
+
+                }
+            }
+            else return ("UNKNOWN", false);
         }
 
         public string Base64Encode(string plainText)
@@ -531,6 +971,7 @@ namespace NtoboaFund.Controllers
 
             return resultString;
         }
+
 
     }
 

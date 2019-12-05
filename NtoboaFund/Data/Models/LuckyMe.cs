@@ -2,7 +2,7 @@
 
 namespace NtoboaFund.Data.Models
 {
-    public class LuckyMe
+    public class LuckyMe : IStakeType
     {
         public int Id { get; set; }
 
@@ -13,7 +13,7 @@ namespace NtoboaFund.Data.Models
         public string Period { get; set; }
 
         public string Status { get; set; }
-        
+
 
         public decimal AmountToWin { get; set; }
 

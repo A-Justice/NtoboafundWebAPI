@@ -25,6 +25,9 @@ namespace NtoboaFund
     //change currentsettings in RaveApiSettingsDTO
     //Toggle the test/live switch on flutterwave dashboard
     //change Draw Time
+    //change the callback url for payments.
+    //check the current payment method in Constants
+    //Check the returns in the messenger service
 
     /// <summary>
     /// 
@@ -46,7 +49,7 @@ namespace NtoboaFund
             //GearHost
             //DefaultConnection
             //Azure
-            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Azure"), i => i.EnableRetryOnFailure()));
+            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Azure"), i => i.EnableRetryOnFailure()), ServiceLifetime.Transient);
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("Personal");

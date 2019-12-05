@@ -25,6 +25,7 @@
 
         public string Status { get; set; }
         public string DateDeclared { get; set; }
+        public string TxRef { get; set; }
 
     }
 }

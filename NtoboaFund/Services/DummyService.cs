@@ -24,7 +24,6 @@ namespace NtoboaFund.Services
                 case EntityTypes.Luckyme:
                     var lstakeAmounts = Constants.LuckyMeStakes;
                     return lstakeAmounts[r.Next(0, lstakeAmounts.Length - 1)];
-                    break;
                 case EntityTypes.Business:
                     var bstakeAmounts = Constants.BusinessStakes;
                     return bstakeAmounts[r.Next(0, bstakeAmounts.Length - 1)];

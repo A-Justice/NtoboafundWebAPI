@@ -142,7 +142,10 @@ namespace NtoboaFund.Controllers
             dbContext.Scholarships.Add(scholarship);
             await dbContext.SaveChangesAsync();
 
-            return CreatedAtAction("GetScholarship", new { id = scholarship.Id }, scholarship);
+            //if (Constants.PaymentGateway == PaymentGateway.slydepay)
+            //    return Ok(new { id = scholarship.Id, paymentToken = Misc.GenerateSlydePayToken(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings) });
+            //else
+            return Ok(new { id = scholarship.Id });
         }
 
         // DELETE: api/Scholarships/5

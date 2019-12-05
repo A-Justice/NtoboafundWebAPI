@@ -10,6 +10,8 @@
     <Compile Remove="Migrations\20190718004417_misc.Designer.cs" />
     <Compile Remove="Migrations\20190909151838_ntoboafund-beta.cs" />
     <Compile Remove="Migrations\20190909151838_ntoboafund-beta.Designer.cs" />
+    <Compile Remove="Migrations\20191124100041_Anonymous.cs" />
+    <Compile Remove="Migrations\20191124100041_Anonymous.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,6 +36,8 @@
     </Reference> -->
   
     <PackageReference Include="Sendgrid" Version="9.12.0" />
+  
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.6.0" />
   
     <PackageReference Include="Twilio" Version="5.33.1" />
   </ItemGroup>

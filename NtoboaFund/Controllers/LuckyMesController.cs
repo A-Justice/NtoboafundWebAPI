@@ -142,7 +142,10 @@ namespace NtoboaFund.Controllers
 
             await dbContext.SaveChangesAsync();
 
-            return CreatedAtAction("GetLuckyMe", new { id = luckyMe.Id }, luckyMe);
+            //if (Constants.PaymentGateway == PaymentGateway.slydepay)
+            //    return Ok(new { id = luckyMe.Id, paymentToken = await Misc.GenerateSlydePayToken(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings) });
+            //else
+            return Ok(new { id = luckyMe.Id });
         }
 
         // DELETE: api/LuckyMes/5

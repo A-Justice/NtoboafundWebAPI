@@ -8,9 +8,13 @@ namespace NtoboaFund.Helpers
 
         public RaveApiSettingsDTO FlatterWaveSettings { get; set; }
 
+        public SlydePayApiSettingsDTO SlydePaySettings { get; set; }
+
 
         public SendGridSettingsDTO SendGridSettings { get; set; }
 
         public MNotifySettingsDTO MNotifySettings { get; set; }
+
+        public ReddeSettingsDTO ReddeSettings { get; set; }
     }
 }

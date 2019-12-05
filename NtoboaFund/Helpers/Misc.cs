@@ -1,5 +1,13 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using NtoboaFund.Data;
+using NtoboaFund.Data.DTO_s;
+using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace NtoboaFund.Helpers
 {
@@ -40,7 +48,11 @@ namespace NtoboaFund.Helpers
                 $" Stay tuned.";
         }
 
-
+        /// <summary>
+        /// Returns the Ghanaian Phone Number in InternationalSyntax
+        /// </summary>
+        /// <param name="phoneNumber"></param>
+        /// <returns></returns>
         public static string FormatGhanaianPhoneNumber(string phoneNumber)
         {
             if (phoneNumber.StartsWith("0") && phoneNumber.Length == 10)
@@ -78,29 +90,49 @@ namespace NtoboaFund.Helpers
         }
 
         /// <summary>
-        /// Returns the phoneNumber in a specific format..
+        /// Return the International Ghanaian phone Number without the initial plus symbol
+        /// </summary>
+        /// <param name="phoneNumber"></param>
+        /// <returns></returns>
+        public static string FormatGhanaianPhoneNumberWp(string phoneNumber)
+        {
+            return FormatGhanaianPhoneNumber(phoneNumber).Substring(1);
+        }
+        /// <summary>
+        /// Returns the The Phone Number without the Country Code
         /// </summary>
         /// <param name="phoneNumber">The phoneNumber to normalize</param>
         /// <returns></returns>
         public static string NormalizePhoneNumber(string phoneNumber)
         {
-            if (phoneNumber == null)
-                return null;
-
-            if (phoneNumber.StartsWith("0") && phoneNumber.Length == 10)
+            try
             {
-                return phoneNumber.Substring(1);
+                if (phoneNumber == null)
+                    return phoneNumber;
+
+                if (phoneNumber.Length < 9)
+                    return phoneNumber;
+
+                if (phoneNumber.StartsWith("0") && phoneNumber.Length == 10)
+                {
+                    return phoneNumber.Substring(1);
+                }
+                else if (!phoneNumber.StartsWith("0") && phoneNumber.Length == 9)
+                {
+                    return phoneNumber;
+                }
+                else if (phoneNumber.StartsWith("233") && phoneNumber.Length == 12)
+                {
+                    return phoneNumber.Substring(3);
+                }
+
+                return phoneNumber.Substring(4);
             }
-            else if (!phoneNumber.StartsWith("0") && phoneNumber.Length == 9)
+            catch
             {
                 return phoneNumber;
             }
-            else if (phoneNumber.StartsWith("233") && phoneNumber.Length == 12)
-            {
-                return phoneNumber.Substring(3);
-            }
 
-            return phoneNumber.Substring(4);
         }
 
         public static string getNetwork(string phoneNumber)
@@ -117,6 +149,37 @@ namespace NtoboaFund.Helpers
             return null;
         }
 
+        /// <summary>
+        /// Get
+        /// </summary>
+        /// <param name="phoneNumber"></param>
+        /// <returns></returns>
+        public static string getSlydePayOption(string phoneNumber)
+        {
+            var phone = Misc.FormatGhanaianPhoneNumber(phoneNumber);
+            var networkDeterminants = phone.Substring(5, 1);
+            if (networkDeterminants == "4" || networkDeterminants == "5")
+                return "MTN_MONEY";
+            else if (networkDeterminants == "0")
+                return "VODAFONE_CASH";
+            else if (networkDeterminants == "6" || networkDeterminants == "7")
+                return "AIRTEL_MONEY";
+
+            return null;
+        }
+        public static string getReddePayOption(string phoneNumber)
+        {
+            var phone = Misc.FormatGhanaianPhoneNumber(phoneNumber);
+            var networkDeterminants = phone.Substring(5, 1);
+            if (networkDeterminants == "4" || networkDeterminants == "5")
+                return "MTN";
+            else if (networkDeterminants == "0")
+                return "VODAFONE";
+            else if (networkDeterminants == "6" || networkDeterminants == "7")
+                return "AIRTELTIGO";
+
+            return null;
+        }
 
         static string getDateString(DateTime date)
         {
@@ -166,25 +229,57 @@ namespace NtoboaFund.Helpers
                     sBuilder.AppendLine($"A winner will be anounced at 6:00 pm on {DateTime.Now.EndOfMonth(18, 0, 0, 0).ToLongDateString()}.");
 
                 }
-                sBuilder.AppendLine($"You've been added to the current LuckyMe {period} participants. Stay tuned");
+                sBuilder.AppendLine($"You have been added to the current LuckyMe {period} participants. Stay tuned");
 
             }
             else if (type == EntityTypes.Business)
             {
                 sBuilder.AppendLine($"Thank you for your {amountStaked.ToString("0.##")} Cedis Business stake.");
-                sBuilder.AppendLine($"Your Potential Return is {(amountStaked * Constants.BusinessStakeOdds).ToString("0.##")} Cedis.");
+                sBuilder.AppendLine($"Your Potential Returns is {(amountStaked * Constants.BusinessStakeOdds).ToString("0.##")} Cedis.");
                 sBuilder.AppendLine($"A winner will be anounced at 6:00 pm on {DateTime.Now.EndOfMonth(18, 0, 0, 0).ToLongDateString()}.");
-                sBuilder.AppendLine($"You've been added to the current business participants. Stay tuned");
+                sBuilder.AppendLine($"You have been added to the current business participants. Stay tuned");
             }
             else if (type == EntityTypes.Scholarship)
             {
                 sBuilder.AppendLine($"Thank you for your {amountStaked.ToString("0.##")} Cedis Scholarship stake.");
-                sBuilder.AppendLine($"Your Potential Return is {(amountStaked * Constants.ScholarshipStakeOdds).ToString("0.##")} Cedis.");
+                sBuilder.AppendLine($"Your Potential Returns is {(amountStaked * Constants.ScholarshipStakeOdds).ToString("0.##")} Cedis.");
                 sBuilder.AppendLine($"A winner will be anounced at 6:00 pm on {DateTime.Now.NextQuater(18, 0, 0, 0).ToLongDateString()}.");
-                sBuilder.AppendLine($"You've been added to the current scholarship participants. Stay tuned");
+                sBuilder.AppendLine($"You have been added to the current scholarship participants. Stay tuned");
             }
 
             return sBuilder.ToString();
+        }
+
+        public static string GetDrawDate(EntityTypes type, string period)
+        {
+            if (type == EntityTypes.Luckyme)
+            {
+
+                if (period == "daily")
+                {
+                    return DateTime.Now.DailyStakeEndDate().ToLongDateString();
+                }
+                else if (period == "weekly")
+                {
+                    return DateTime.Now.EndOfWeek(18, 0, 0, 0).ToLongDateString();
+
+                }
+                else if (period == "monthly")
+                {
+                    return DateTime.Now.EndOfMonth(18, 0, 0, 0).ToLongDateString();
+
+                }
+            }
+            else if (type == EntityTypes.Business)
+            {
+                return DateTime.Now.EndOfMonth(18, 0, 0, 0).ToLongDateString();
+            }
+            else if (type == EntityTypes.Scholarship)
+            {
+                return DateTime.Now.NextQuater(18, 0, 0, 0).ToLongDateString();
+            }
+
+            return null;
         }
 
         public static string GetUssdPreStakeMessage(string type, string amount, string period)
@@ -246,7 +341,315 @@ namespace NtoboaFund.Helpers
 
             return sBuilder.ToString();
         }
+
+        public static JsonSerializerSettings getDefaultResolverJsonSettings()
+        {
+            return new JsonSerializerSettings
+            {
+                ContractResolver = new DefaultContractResolver()
+            };
+        }
+
+
+        public static async Task<string> GenerateSlydePayToken(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings)
+        {
+
+            try
+            {
+                SlydePayOrderItem item = new SlydePayOrderItem();
+                item.ItemCode = stakeType.Id.ToString();
+                item.ItemName = $"{entityType.ToString()} Investment";
+                item.Quantity = 1;
+                item.SubTotal = stakeType.Amount;
+                item.UnitPrice = stakeType.Amount;
+
+                SlydePayOrderItem[] items = { item };
+
+                SlydePayCreateInvoiceRequest request = new SlydePayCreateInvoiceRequest
+                {
+                    EmailOrMobileNumber = slydePayApiSettings.MerchantEmail,
+                    MerchantKey = slydePayApiSettings.Merchantkey,
+                    Amount = stakeType.Amount,
+                    OrderCode = stakeType.TxRef,
+                    OrderItems = items
+                };
+
+                //PayliveConnector connector = new PayliveConnector(slydePayApiSettings.ApiVersion, slydePayApiSettings.MerchantEmail, slydePayApiSettings.Merchantkey, slydePayApiSettings.ServiceType, slydePayApiSettings.IntegrationMode);
+
+                var httpClient = new HttpClient();
+
+
+                var data = JsonConvert.SerializeObject(request, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+                var stringContent = new StringContent(data);
+                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                var responseMessage = await httpClient.PostAsync("https://app.slydepay.com.gh/api/merchant/invoice/create", stringContent);
+
+                var contentString = await responseMessage.Content.ReadAsStringAsync();
+                SlydePayCreateInvoiceResponse response = JsonConvert.DeserializeObject<SlydePayCreateInvoiceResponse>(contentString);
+
+                return response.result.payToken;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GenerateSlydePayToken {ex.Message}");
+                return null;
+            }
+
+        }
+
+        #region SlydePayMethods
+
+        public static async Task<string> GenerateAndSendSlydePayMomoInvoice(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings, string MomoNumber)
+        {
+            if (string.IsNullOrEmpty(MomoNumber))
+                return null;
+
+            return await GenerateAndSendSlydePayInvoice(entityType, stakeType, slydePayApiSettings, getSlydePayOption(MomoNumber), MomoNumber);
+        }
+        public static async Task<string> GenerateAndSendSlydePayCardInvoice(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings, string email)
+        {
+            return await GenerateAndSendSlydePayInvoice(entityType, stakeType, slydePayApiSettings, "VISA", null, email);
+
+        }
+
+        public static async Task<string> GenerateAndSendSlydePayAnkasaInvoice(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings)
+        {
+            return await GenerateAndSendSlydePayInvoice(entityType, stakeType, slydePayApiSettings, "SLYDEPAY");
+
+        }
+
+        private static async Task<string> GenerateAndSendSlydePayInvoice(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings, string PayOption, string MomoNumber = null, string email = null)
+        {
+            string customerMobileNumber = MomoNumber ?? stakeType.User.PhoneNumber;
+            string customerEmail = email == "default" ? stakeType.User.Email : email;
+
+            try
+            {
+                SlydePayOrderItem item = new SlydePayOrderItem();
+                item.ItemCode = stakeType.Id.ToString();
+                item.ItemName = $"{entityType.ToString()} Investment";
+                item.Quantity = 1;
+                item.SubTotal = stakeType.Amount;
+                item.UnitPrice = stakeType.Amount;
+
+                SlydePayOrderItem[] items = { item };
+
+                SlydePayCreateInvoiceRequest request = new SlydePayCreateInvoiceRequest
+                {
+                    EmailOrMobileNumber = slydePayApiSettings.MerchantEmail,
+                    MerchantKey = slydePayApiSettings.Merchantkey,
+                    Amount = stakeType.Amount,
+                    OrderCode = stakeType.TxRef,
+                    OrderItems = items,
+                    SendInvoice = true,
+                    PayOption = PayOption,
+                    CustomerName = stakeType.User.FirstName + " " + stakeType.User.FirstName,
+                    CustomerEmail = customerEmail,
+                    CustomerMobileNumber = customerMobileNumber
+                };
+
+                var httpClient = new HttpClient();
+
+
+                var data = JsonConvert.SerializeObject(request, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+                var stringContent = new StringContent(data);
+                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                var responseMessage = await httpClient.PostAsync("https://app.slydepay.com.gh/api/merchant/invoice/create", stringContent);
+
+                var contentString = await responseMessage.Content.ReadAsStringAsync();
+                SlydePayCreateInvoiceResponse response = JsonConvert.DeserializeObject<SlydePayCreateInvoiceResponse>(contentString);
+
+                return response.result.payToken;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GenerateSlydePayToken {ex.Message}");
+                return null;
+            }
+
+        }
+
+        public static async Task<SlydePayPaymentStatusResponse> ConfirmSlydePayTransaction(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings)
+        {
+            try
+            {
+                SlydePayCreateInvoiceRequest request = new SlydePayCreateInvoiceRequest
+                {
+                    EmailOrMobileNumber = slydePayApiSettings.MerchantEmail,
+                    MerchantKey = slydePayApiSettings.Merchantkey,
+                    OrderCode = stakeType.TxRef
+                };
+
+                var httpClient = new HttpClient();
+
+
+                var data = JsonConvert.SerializeObject(request, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+                var stringContent = new StringContent(data);
+                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                var responseMessage = await httpClient.PostAsync("https://app.slydepay.com.gh/api/merchant/transaction/confirm", stringContent);
+
+                var contentString = await responseMessage.Content.ReadAsStringAsync();
+                SlydePayPaymentStatusResponse response = JsonConvert.DeserializeObject<SlydePayPaymentStatusResponse>(contentString);
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Confirm Slydepay Transaction {ex.Message}");
+                return null;
+            }
+
+        }
+
+
+        public static async Task<SlydePayPaymentStatusResponse> CancelSlydePayTransaction(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings)
+        {
+            try
+            {
+
+                SlydePayCreateInvoiceRequest request = new SlydePayCreateInvoiceRequest
+                {
+                    EmailOrMobileNumber = slydePayApiSettings.MerchantEmail,
+                    MerchantKey = slydePayApiSettings.Merchantkey,
+                    OrderCode = stakeType.TxRef
+                };
+
+                var httpClient = new HttpClient();
+
+
+                var data = JsonConvert.SerializeObject(request, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+                var stringContent = new StringContent(data);
+                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                var responseMessage = await httpClient.PostAsync("https://app.slydepay.com.gh/api/merchant/transaction/cancel", stringContent);
+
+                var contentString = await responseMessage.Content.ReadAsStringAsync();
+                SlydePayPaymentStatusResponse response = JsonConvert.DeserializeObject<SlydePayPaymentStatusResponse>(contentString);
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GenerateSlydePayToken {ex.Message}");
+                return null;
+            }
+
+        }
+
+        #endregion
+
+        #region ReddeMethods
+        public static async Task<string> GenerateAndSendReddeMomoInvoice(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO redSettings, string MomoNumber)
+        {
+            if (string.IsNullOrEmpty(MomoNumber))
+                return null;
+
+            return await GenerateAndSendReddeInvoice(entityType, stakeType, redSettings, getReddePayOption(MomoNumber), MomoNumber);
+        }
+
+        public static async Task<string> GenerateReddeToken(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO reddeSettings, string MomoNumber = null)
+        {
+            string customerMobileNumber = MomoNumber ?? stakeType.User.PhoneNumber;
+            //string customerEmail = email == "default" ? stakeType.User.Email : email;
+            try
+            {
+
+                ReddeCheckoutRequest request = new ReddeCheckoutRequest
+                {
+                    Amount = stakeType.Amount,
+                    Apikey = reddeSettings.ApiKey,
+                    Appid = reddeSettings.AppId,
+                    Description = entityType.GetType().Name + " Investment",
+                    Failurecallback = "",
+                    Logolink = "",
+                    Merchantname = reddeSettings.NickName,
+                    Clienttransid = stakeType.TxRef,
+                    Successcallback = "",
+                };
+
+                var httpClient = new HttpClient();
+
+
+                var data = JsonConvert.SerializeObject(request, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+                var stringContent = new StringContent(data);
+                httpClient.DefaultRequestHeaders.Add("apikey", reddeSettings.ApiKey);
+                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                var responseMessage = await httpClient.PostAsync("https://api.reddeonline.com/v1/checkout/", stringContent);
+
+                var contentString = await responseMessage.Content.ReadAsStringAsync();
+                ReddeCheckoutResponse response = JsonConvert.DeserializeObject<ReddeCheckoutResponse>(contentString);
+
+                return response.Responsetoken;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GenerateReddeToken {ex.Message}");
+                return null;
+            }
+
+        }
+
+        private static async Task<string> GenerateAndSendReddeInvoice(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO reddeSettings, string PayOption, string MomoNumber = null, string voucher = null)
+        {
+            string customerMobileNumber = MomoNumber ?? stakeType.User.PhoneNumber;
+            //string customerEmail = email == "default" ? stakeType.User.Email : email;
+            try
+            {
+
+                ReddeRequest request = new ReddeRequest
+                {
+                    Amount = stakeType.Amount,
+                    Appid = reddeSettings.AppId,
+                    Clientreference = stakeType.TxRef,
+                    Clienttransid = stakeType.TxRef,
+                    Description = entityType.ToString() + " Investment",
+                    Nickname = reddeSettings.NickName,
+                    Paymentoption = PayOption,
+                    Vouchercode = voucher,
+                    Walletnumber = FormatGhanaianPhoneNumberWp(customerMobileNumber)
+                };
+
+                var httpClient = new HttpClient();
+
+
+                var data = JsonConvert.SerializeObject(request, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+                var stringContent = new StringContent(data);
+                httpClient.DefaultRequestHeaders.Add("apikey", reddeSettings.ApiKey);
+                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                var responseMessage = await httpClient.PostAsync("https://api.reddeonline.com/v1/receive", stringContent);
+
+                var contentString = await responseMessage.Content.ReadAsStringAsync();
+                ReddeInitialResponse response = JsonConvert.DeserializeObject<ReddeInitialResponse>(contentString);
+
+                return response.Clienttransid;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GenerateReddeToken {ex.Message}");
+                return null;
+            }
+
+        }
+
+
+        #endregion
+
+        public static string getTxRef(string phoneNumber)
+        {
+            var match = Regex.Match(phoneNumber, @"^(\w{2}).*(\w{2})$");
+
+            var userCode = match.Groups[1].ToString() + match.Groups[2].ToString();
+            var timeStamp = DateTime.Now.TimeOfDay.ToString();
+            return $"inv.{ userCode}.{timeStamp}";
+        }
+
     }
+
 }
 
 

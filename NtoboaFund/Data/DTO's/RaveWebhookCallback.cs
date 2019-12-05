@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace NtoboaFund.Data.DTO_s
 {
@@ -28,7 +25,7 @@ namespace NtoboaFund.Data.DTO_s
         public string type { get; set; }
     }
 
-    public class WebhookCallback
+    public class RaveWebhookCallback
     {
         public int id { get; set; }
         public string txRef { get; set; }

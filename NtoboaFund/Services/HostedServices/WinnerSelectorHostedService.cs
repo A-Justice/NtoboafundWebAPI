@@ -74,7 +74,7 @@ namespace NtoboaFund.Services.HostedServices
         public async Task chooseDailyWinner(object obj)
         {
             var ddaydiff = DateTime.Now.DailyStakeEndDate() - DateTime.Now;
-            //var ddaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
+            // var ddaydiff = DateTime.Now.NextFiveMinutes() - DateTime.Now;
 
             if (ddaydiff.TotalMinutes >= 0 && ddaydiff.TotalMinutes <= 1)
             {
@@ -483,7 +483,6 @@ namespace NtoboaFund.Services.HostedServices
             return selectedWinnersId;
         }
 
-
         /// <summary>
         /// Returns the Id of the Lucky Me That won
         /// </summary>
@@ -491,7 +490,6 @@ namespace NtoboaFund.Services.HostedServices
         /// <returns></returns>
         public List<int?> RunLuckyMeAlgorithm(IEnumerable<LuckyMe> eligibleLuckyMeWinners)
         {
-
             if (eligibleLuckyMeWinners == null || eligibleLuckyMeWinners.Count() < 1) return null;
             //Repeat the luckyme's occurance in the selection list based on the amount staked.
             //The Selection List contains Id's of hte Lucky Me;
@@ -572,9 +570,11 @@ namespace NtoboaFund.Services.HostedServices
 
                     try
                     {
+                        //if (user.PreferedMoneyReceptionMethod == "momo")
+                        //{
+                        //    PaymentService.MomoTransfer(user, item.AmountToWin, "luckyme");
+                        //}
 
-                        //I'll come back to this..
-                        // PaymentService.MomoTransfer(user, item.AmountToWin, "luckyme");
                         MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Winner", $"Congratulations {user.FirstName} {user.LastName}, your {item.Period} Ntoboa of {item.Amount} Cedi(s) on {item.Date} has yielded an amount of {item.AmountToWin} Cedi(s) which would be paid directly into your {user.PreferedMoneyReceptionMethod} account");
 
                         MessagingService.SendSms(user.PhoneNumber, $"Congratulations {user.FirstName} {user.LastName}, your {item.Period} Luckyme Ntoboa of {item.Amount} Cedi(s) on {item.Date} has yielded an amount of {item.AmountToWin} Cedi(s) which would be paid directly into your {user.PreferedMoneyReceptionMethod} account");
@@ -589,9 +589,9 @@ namespace NtoboaFund.Services.HostedServices
 
                 item.Status = "lost";
 
-                MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has failed to yield any value. Please Try Again");
+                MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
 
-                MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has failed to yield any value. Please Try Again");
+                MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
 
 
                 context.Entry(item).State = EntityState.Modified;
@@ -685,10 +685,10 @@ namespace NtoboaFund.Services.HostedServices
 
                     try
                     {
-                        if (user.PreferedMoneyReceptionMethod == "momo")
-                        {
-                            //PaymentService.MomoTransfer(user, item.AmountToWin, "Scholarship");
-                        }
+                        //if (user.PreferedMoneyReceptionMethod == "momo")
+                        //{
+                        //    PaymentService.MomoTransfer(user, item.AmountToWin, "Scholarship");
+                        //}
                         MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Winner", $"Congratulations {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has yielded an amount of {item.AmountToWin} Cedi(s) which would be paid directly into your {user.PreferedMoneyReceptionMethod} account");
 
                         MessagingService.SendSms(user.PhoneNumber, $"Congratulations {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has yielded an amount of {item.AmountToWin} Cedi(s) which would be paid directly into your {user.PreferedMoneyReceptionMethod} account");
@@ -711,9 +711,9 @@ namespace NtoboaFund.Services.HostedServices
                 }
 
                 item.Status = "lost";
-                MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has failed to yield any value. Please Try Again");
+                MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
 
-                MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has failed to yield any value. Please Try Again");
+                MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
 
                 context.Entry(item).State = EntityState.Modified;
 
@@ -800,10 +800,10 @@ namespace NtoboaFund.Services.HostedServices
 
                     try
                     {
-                        if (user.PreferedMoneyReceptionMethod == "momo")
-                        {
-                            //PaymentService.MomoTransfer(user, item.AmountToWin, "luckyme");
-                        }
+                        //if (user.PreferedMoneyReceptionMethod == "momo")
+                        //{
+                        //    PaymentService.MomoTransfer(user, item.AmountToWin, "luckyme");
+                        //}
                         MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Winner", $"Congratulations {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has yielded an amount of {item.AmountToWin} Cedi(s) which would be paid directly into your {user.PreferedMoneyReceptionMethod} account");
 
                         MessagingService.SendSms(user.PhoneNumber, $"Congratulations {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has yielded an amount of {item.AmountToWin} Cedi(s) which would be paid directly into your {user.PreferedMoneyReceptionMethod} account");
@@ -827,9 +827,9 @@ namespace NtoboaFund.Services.HostedServices
 
                 item.Status = "lost";
 
-                MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has failed to yield any value. Please Try Again");
+                MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
 
-                MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has failed to yield any value. Please Try Again");
+                MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
 
                 context.Entry(item).State = EntityState.Modified;
 
