@@ -9,7 +9,7 @@
         public string Failurecallback { get; set; }
         public string Logolink { get; set; }
         public string Merchantname { get; set; }
-        public string Clienttransid { get; set; }
+        public long Clienttransid { get; set; }
         public string Successcallback { get; set; }
     }
 }

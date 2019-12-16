@@ -56,7 +56,7 @@ namespace NtoboaFund.Services
                         //If transfer is successfull add a new payment
                         var payment = new Payment
                         {
-                            Reference = responseObject.data.reference,
+                            // Reference = responseObject.data.reference,
 
                         };
 
@@ -90,7 +90,6 @@ namespace NtoboaFund.Services
 
                     var httpClient = new HttpClient();
 
-
                     var data = JsonConvert.SerializeObject(request, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
                     var stringContent = new StringContent(data);
                     httpClient.DefaultRequestHeaders.Add("apikey", AppSettings.ReddeSettings.ApiKey);
@@ -105,20 +104,16 @@ namespace NtoboaFund.Services
                     {
                         dbContext.Payments.Add(new Payment
                         {
-                            Reference = txRef,
                             ItemPayedFor = stakeType.GetType().Name + " winning",
                             ItemPayedForId = stakeType.Id,
-                            AmountPaid = stakeType.AmountToWin,
-                            TelcoTransactionId = response.Telcotransid,
-                            DatePayed = DateTime.Now,
-                            UserId = stakeType.User.Id
+                            DatePayed = DateTime.Now
                         });
                         await dbContext.SaveChangesAsync();
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"GenerateSlydePayToken {ex.Message}");
+                    Console.WriteLine($"MomoTransfer {ex.Message}");
                 }
 
             }

@@ -47,6 +47,13 @@ namespace NtoboaFund.Controllers
             return dbContext.Scholarships.Where(i => i.Status.ToLower() == status);
         }
 
+        [HttpGet("unpaidwinnerscount")]
+        public async Task<int> GetUnpaidWinnersCount()
+        {
+            return await dbContext.Scholarships.Where(i => i.Status.ToLower() == "won" && i.User.UserType == 0).CountAsync();
+        }
+
+
         [HttpGet("bytype/{type}")]
         public IEnumerable<Scholarship> GetScholarshipsByType(string type)
         {

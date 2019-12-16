@@ -19,6 +19,8 @@
 
         public static int[] BusinessStakes { get; set; } = { 100, 500, 1000, 2000 };
 
+        public static string MasterNumber { get; set; } = "233557560016";
+
         /// <summary>
         /// Determines how long a dummy takes before it participates in the draw again
         /// </summary>

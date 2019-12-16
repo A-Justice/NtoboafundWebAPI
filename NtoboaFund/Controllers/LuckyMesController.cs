@@ -169,6 +169,12 @@ namespace NtoboaFund.Controllers
             return Ok(luckyMe);
         }
 
+        [HttpGet("unpaidwinnerscount")]
+        public async Task<int> GetUnpaidWinnersCount()
+        {
+            return await dbContext.LuckyMes.Where(i => i.Status.ToLower() == "won" && i.User.UserType == 0).CountAsync();
+        }
+
         private bool LuckyMeExists(int id)
         {
             return dbContext.LuckyMes.Any(e => e.Id == id);

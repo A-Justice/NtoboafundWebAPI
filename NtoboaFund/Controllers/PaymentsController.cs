@@ -51,10 +51,21 @@ namespace NtoboaFund.Controllers
         [HttpGet("bydetails/{itemPayedFor}/{itemPayedForId}")]
         public async Task<IActionResult> GetPaymentByDetails([FromRoute]string itemPayedFor, [FromRoute]int itemPayedForId)
         {
-            var oldSamePayment = dbContext.Payments.Where(i => i.ItemPayedFor == itemPayedFor && i.ItemPayedForId == itemPayedForId).FirstOrDefault();
+            Payment oldSamePayment = null;
+            if (itemPayedFor == "lkm")
+            {
+                oldSamePayment = dbContext.Payments.Where(i => i.ItemPayedFor == "Luckyme" && i.ItemPayedForId == itemPayedForId).FirstOrDefault();
+            }
+            else if (itemPayedFor == "bus")
+            {
+                oldSamePayment = dbContext.Payments.Where(i => i.ItemPayedFor == "Business" && i.ItemPayedForId == itemPayedForId).FirstOrDefault();
+            }
+            else if (itemPayedFor == "sch")
+            {
+                oldSamePayment = dbContext.Payments.Where(i => i.ItemPayedFor == "Scholarship" && i.ItemPayedForId == itemPayedForId).FirstOrDefault();
+            }
 
             return Ok(oldSamePayment);
-
         }
 
         // PUT: api/Payments/5

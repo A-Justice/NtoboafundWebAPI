@@ -12,6 +12,8 @@
     <Compile Remove="Migrations\20190909151838_ntoboafund-beta.Designer.cs" />
     <Compile Remove="Migrations\20191124100041_Anonymous.cs" />
     <Compile Remove="Migrations\20191124100041_Anonymous.Designer.cs" />
+    <Compile Remove="Migrations\20191213174453_test.cs" />
+    <Compile Remove="Migrations\20191213174453_test.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>

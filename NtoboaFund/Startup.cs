@@ -165,12 +165,12 @@ namespace NtoboaFund
                 IdentityResult roleResult = roleManager.CreateAsync(new IdentityRole("Admin")).Result;
 
             }
-
             else if (!roleManager.RoleExistsAsync("User").Result)
             {
 
                 IdentityResult roleResult = roleManager.CreateAsync(new IdentityRole("User")).Result;
             }
+
 
 
             if (userManager.FindByNameAsync("admin@ntoboafund.com").Result == null)

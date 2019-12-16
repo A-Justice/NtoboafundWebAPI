@@ -542,15 +542,34 @@ namespace NtoboaFund.Helpers
         #endregion
 
         #region ReddeMethods
-        public static async Task<string> GenerateAndSendReddeMomoInvoice(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO redSettings, string MomoNumber)
+        /// <summary>
+        /// Sends the momo invoice to users phone
+        /// </summary>
+        /// <param name="entityType"></param>
+        /// <param name="stakeType"></param>
+        /// <param name="redSettings"></param>
+        /// <param name="momoAndVoucher"></param>
+        /// <returns>Transaction Id</returns>
+        public static async Task<int?> GenerateAndSendReddeMomoInvoice(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO redSettings, string momoAndVoucher)
         {
+            var mandV = momoAndVoucher.Split('*');
+            var MomoNumber = mandV[0];
+            var voucher = mandV[1];
             if (string.IsNullOrEmpty(MomoNumber))
                 return null;
 
-            return await GenerateAndSendReddeInvoice(entityType, stakeType, redSettings, getReddePayOption(MomoNumber), MomoNumber);
+            return await GenerateAndSendReddeInvoice(entityType, stakeType, redSettings, getReddePayOption(MomoNumber), MomoNumber, voucher);
         }
 
-        public static async Task<string> GenerateReddeToken(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO reddeSettings, string MomoNumber = null)
+        /// <summary>
+        /// Generate the token used to redirect the user to pay
+        /// </summary>
+        /// <param name="entityType"></param>
+        /// <param name="stakeType"></param>
+        /// <param name="reddeSettings"></param>
+        /// <param name="MomoNumber"></param>
+        /// <returns>The generated token and checkout Tranaction id</returns>
+        public static async Task<(string token, int? checkoutransId)> GenerateReddeToken(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO reddeSettings, string MomoNumber = null)
         {
             string customerMobileNumber = MomoNumber ?? stakeType.User.PhoneNumber;
             //string customerEmail = email == "default" ? stakeType.User.Email : email;
@@ -563,11 +582,11 @@ namespace NtoboaFund.Helpers
                     Apikey = reddeSettings.ApiKey,
                     Appid = reddeSettings.AppId,
                     Description = entityType.GetType().Name + " Investment",
-                    Failurecallback = "",
-                    Logolink = "",
+                    Failurecallback = "https://ntoboasuccess.com",
+                    Logolink = "https://ntoboafund.com/assets/images/ntlog.png",
                     Merchantname = reddeSettings.NickName,
-                    Clienttransid = stakeType.TxRef,
-                    Successcallback = "",
+                    Clienttransid = stakeType.Id,
+                    Successcallback = "https://ntoboafailure.com",
                 };
 
                 var httpClient = new HttpClient();
@@ -583,17 +602,17 @@ namespace NtoboaFund.Helpers
                 var contentString = await responseMessage.Content.ReadAsStringAsync();
                 ReddeCheckoutResponse response = JsonConvert.DeserializeObject<ReddeCheckoutResponse>(contentString);
 
-                return response.Responsetoken;
+                return (response.Responsetoken, response.Checkouttransid);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"GenerateReddeToken {ex.Message}");
-                return null;
+                return (null, null);
             }
 
         }
 
-        private static async Task<string> GenerateAndSendReddeInvoice(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO reddeSettings, string PayOption, string MomoNumber = null, string voucher = null)
+        private static async Task<int?> GenerateAndSendReddeInvoice(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO reddeSettings, string PayOption, string MomoNumber = null, string voucher = null)
         {
             string customerMobileNumber = MomoNumber ?? stakeType.User.PhoneNumber;
             //string customerEmail = email == "default" ? stakeType.User.Email : email;
@@ -626,7 +645,7 @@ namespace NtoboaFund.Helpers
                 var contentString = await responseMessage.Content.ReadAsStringAsync();
                 ReddeInitialResponse response = JsonConvert.DeserializeObject<ReddeInitialResponse>(contentString);
 
-                return response.Clienttransid;
+                return response.Transactionid;
             }
             catch (Exception ex)
             {

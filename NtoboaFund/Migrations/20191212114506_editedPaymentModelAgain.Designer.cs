@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NtoboaFund.Data.DBContext;
 
 namespace NtoboaFund.Migrations
 {
     [DbContext(typeof(NtoboaFundDbContext))]
-    partial class NtoboaFundDbContextModelSnapshot : ModelSnapshot
+    [Migration("20191212114506_editedPaymentModelAgain")]
+    partial class editedPaymentModelAgain
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -294,7 +296,7 @@ namespace NtoboaFund.Migrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<DateTime?>("DatePayed");
+                    b.Property<DateTime>("DatePayed");
 
                     b.Property<bool>("IsPaid");
 
@@ -302,9 +304,9 @@ namespace NtoboaFund.Migrations
 
                     b.Property<int>("ItemPayedForId");
 
-                    b.Property<string>("PayerId");
+                    b.Property<long>("Reference");
 
-                    b.Property<long>("TransactionId");
+                    b.Property<string>("TelcoTransactionId");
 
                     b.HasKey("PaymentId");
 

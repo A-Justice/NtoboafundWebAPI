@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NtoboaFund.Data.DBContext;
 
 namespace NtoboaFund.Migrations
 {
     [DbContext(typeof(NtoboaFundDbContext))]
-    partial class NtoboaFundDbContextModelSnapshot : ModelSnapshot
+    [Migration("20191213140421_addedPayerIdToPayment")]
+    partial class addedPayerIdToPayment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -302,7 +304,7 @@ namespace NtoboaFund.Migrations
 
                     b.Property<int>("ItemPayedForId");
 
-                    b.Property<string>("PayerId");
+                    b.Property<int>("PayerId");
 
                     b.Property<long>("TransactionId");
 

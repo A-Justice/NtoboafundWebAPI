@@ -65,20 +65,20 @@ namespace NtoboaFund.Services
             Console.WriteLine(message.Sid);
         }
 
-        public async Task SendSms(string phoneNumber, string message)
+        public async Task SendSms(string phoneNumber, string message, string senderId = "Ntoboafund")
         {
             //return;
 
             if (string.IsNullOrEmpty(phoneNumber))
                 return;
 
-            SendMNotifySms(phoneNumber, message);
+            SendMNotifySms(phoneNumber, message, senderId);
         }
 
-        public void SendMNotifySms(string phoneNumber, string message)
+        public void SendMNotifySms(string phoneNumber, string message, string senderId)
         {
             phoneNumber = Misc.FormatGhanaianPhoneNumber(phoneNumber);
-            string url = $"https://apps.mnotify.net/smsapi?key={AppSetting.MNotifySettings.ApiKey}&to={phoneNumber}&msg={message}&sender_id=NtoboaFund";
+            string url = $"https://apps.mnotify.net/smsapi?key={AppSetting.MNotifySettings.ApiKey}&to={phoneNumber}&msg={message}&sender_id={senderId}";
 
 
             var httpClient = new HttpClient();
@@ -87,6 +87,7 @@ namespace NtoboaFund.Services
             {
                 HttpResponseMessage response = httpClient.GetAsync(url).Result;
 
+                string m = response.Content.ReadAsStringAsync().Result;
             }
             catch (Exception ex)
             {

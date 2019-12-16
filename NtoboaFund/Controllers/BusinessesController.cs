@@ -61,6 +61,13 @@ namespace NtoboaFund.Controllers
                 return dbContext.Businesses.Where(i => i.User.UserType != 2);
         }
 
+        [HttpGet("unpaidwinnerscount")]
+        public async Task<int> GetUnpaidWinnersCount()
+        {
+            return await dbContext.Businesses.Where(i => i.Status.ToLower() == "won" && i.User.UserType == 0).CountAsync();
+        }
+
+
 
         [AllowAnonymous]
         [HttpGet("winners")]
