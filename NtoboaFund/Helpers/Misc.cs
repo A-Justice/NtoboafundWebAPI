@@ -171,7 +171,7 @@ namespace NtoboaFund.Helpers
         {
             var phone = Misc.FormatGhanaianPhoneNumber(phoneNumber);
             var networkDeterminants = phone.Substring(5, 1);
-            if (networkDeterminants == "4" || networkDeterminants == "5")
+            if (networkDeterminants == "4" || networkDeterminants == "5" || networkDeterminants == "9")
                 return "MTN";
             else if (networkDeterminants == "0")
                 return "VODAFONE";
@@ -665,6 +665,17 @@ namespace NtoboaFund.Helpers
             var userCode = match.Groups[1].ToString() + match.Groups[2].ToString();
             var timeStamp = DateTime.Now.TimeOfDay.ToString();
             return $"inv.{ userCode}.{timeStamp}";
+        }
+
+
+        public static string getPlayerType(string index)
+        {
+            if (index == "1")
+                return "student";
+            else if (index == "2")
+                return "parent";
+
+            return null;
         }
 
     }

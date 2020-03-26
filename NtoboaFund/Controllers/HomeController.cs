@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using NtoboaFund.Data.DBContext;
 using NtoboaFund.Data.DTO_s;
+using NtoboaFund.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -72,6 +73,35 @@ namespace NtoboaFund.Controllers
 
 
             return orderedWinners;
+        }
+
+        [HttpGet("resetpts")]
+        public IActionResult ResetPoints()
+        {
+            foreach (var item in dbContext.Users)
+            {
+                item.Points = 0.00M;
+                dbContext.Entry(item).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+            }
+            foreach (var item in dbContext.LuckyMes.Where(i => i.User.UserType == 0 && i.Status != "pending" && i.Status != "failed"))
+            {
+                item.User.Points += (item.Amount * Constants.PointConstant);
+                dbContext.Entry(item.User).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+            }
+            foreach (var item in dbContext.Businesses.Where(i => i.User.UserType == 0 && i.Status != "pending" && i.Status != "failed"))
+            {
+                item.User.Points += (item.Amount * Constants.PointConstant);
+                dbContext.Entry(item.User).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+            }
+            foreach (var item in dbContext.Scholarships.Where(i => i.User.UserType == 0 && i.Status != "pending" && i.Status != "failed"))
+            {
+                item.User.Points += (item.Amount * Constants.PointConstant);
+                dbContext.Entry(item.User).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+            }
+
+
+            dbContext.SaveChanges();
+            return Ok();
         }
     }
 }

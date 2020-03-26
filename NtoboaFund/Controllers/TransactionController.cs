@@ -259,7 +259,8 @@ namespace NtoboaFund.Controllers
         {
             lock (locker)
             {
-                var luckyMe = dbContext.LuckyMes.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+                var luckyMe = dbContext.LuckyMes.Where(i => i.TxRef == txRef).FirstOrDefault();
+                ApplicationUser luckyMeUser = null;
                 if (luckyMe == null)
                 {
                     return BadRequest(new { status = "", errorString = "luckyMe stake was not found" });
@@ -269,6 +270,8 @@ namespace NtoboaFund.Controllers
                     return Ok(new { luckyMe.Status, message = "LuckyMe Already Verified" });
                 }
 
+                luckyMeUser = dbContext.Users.Find(luckyMe.UserId);
+
                 string errorString = null;
 
                 try
@@ -276,11 +279,12 @@ namespace NtoboaFund.Controllers
                     var VResult = VerifyPayment(luckyMe.TransferId, paymentType, status).Result;
                     if (VResult.isConfirmed)
                     {
-                        if (luckyMe.Status == "paid")
+                        if (luckyMe.Status.ToLower() == "paid")
                             return Ok(new { luckyMe, errorString });
 
                         luckyMe.Status = "paid";
-                        luckyMe.User.Points += luckyMe.Amount * Constants.PointConstant;
+
+                        luckyMeUser.Points += luckyMe.Amount * Constants.PointConstant;
                         luckyMe.DateDeclared = Misc.GetDrawDate(EntityTypes.Luckyme, luckyMe.Period);
                         if (Constants.PaymentGateway == PaymentGateway.slydepay)
                         {
@@ -300,25 +304,26 @@ namespace NtoboaFund.Controllers
                         else
                             luckyMe.Status = "failed";
                     }
+                    dbContext.Entry(luckyMeUser).State = EntityState.Modified;
                     dbContext.Entry(luckyMe).State = EntityState.Modified;
                     dbContext.SaveChanges();
 
-                    if (luckyMe.User != null && luckyMe.Status.ToLower() == "paid") //send the currently added participant to all clients
+                    if (luckyMeUser != null && luckyMe.Status.ToLower() == "paid") //send the currently added participant to all clients
                     {
                         if (luckyMe.Period.ToLower() == "daily")
                         {
                             //Send an Email to the User
-                            MessagingService.SendMail(luckyMe.User.FirstName + luckyMe.User.LastName, luckyMe.User.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
+                            MessagingService.SendMail(luckyMeUser.FirstName + luckyMeUser.LastName, luckyMeUser.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
 
                             //Send as sms to the user
-                            MessagingService.SendSms(luckyMe.User.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
+                            MessagingService.SendSms(luckyMeUser.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
 
                             StakersHub.Clients.All.SendAsync("adddailyluckymeparticipant",
                            new LuckyMeParticipantDTO
                            {
                                Id = luckyMe.Id,
-                               UserId = luckyMe.User.Id,
-                               UserName = luckyMe.User.FirstName + " " + luckyMe.User.LastName,
+                               UserId = luckyMeUser.Id,
+                               UserName = luckyMeUser.FirstName + " " + luckyMeUser.LastName,
                                AmountStaked = luckyMe.Amount.ToString("0.##"),
                                AmountToWin = luckyMe.AmountToWin.ToString("0.##"),
                                Status = luckyMe.Status.ToLower(),
@@ -346,16 +351,16 @@ namespace NtoboaFund.Controllers
                         else if (luckyMe.Period.ToLower() == "weekly")
                         {
                             //Send as sms to the user
-                            MessagingService.SendMail(luckyMe.User.FirstName + luckyMe.User.LastName, luckyMe.User.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
-                            MessagingService.SendSms(luckyMe.User.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
+                            MessagingService.SendMail(luckyMeUser.FirstName + luckyMeUser.LastName, luckyMeUser.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
+                            MessagingService.SendSms(luckyMeUser.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
 
 
                             StakersHub.Clients.All.SendAsync("addweeklyluckymeparticipant",
                               new LuckyMeParticipantDTO
                               {
                                   Id = luckyMe.Id,
-                                  UserId = luckyMe.User.Id,
-                                  UserName = luckyMe.User.FirstName + " " + luckyMe.User.LastName,
+                                  UserId = luckyMeUser.Id,
+                                  UserName = luckyMeUser.FirstName + " " + luckyMeUser.LastName,
                                   AmountStaked = luckyMe.Amount.ToString("0.##"),
                                   AmountToWin = luckyMe.AmountToWin.ToString("0.##"),
                                   Status = luckyMe.Status.ToLower(),
@@ -386,17 +391,17 @@ namespace NtoboaFund.Controllers
                         else if (luckyMe.Period.ToLower() == "monthly")
                         {
                             //Send an Email to the User
-                            MessagingService.SendMail(luckyMe.User.FirstName + luckyMe.User.LastName, luckyMe.User.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
+                            MessagingService.SendMail(luckyMeUser.FirstName + luckyMeUser.LastName, luckyMeUser.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
 
                             //Send as sms to the user
-                            MessagingService.SendSms(luckyMe.User.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
+                            MessagingService.SendSms(luckyMeUser.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period));
 
                             StakersHub.Clients.All.SendAsync("addmonthlyluckymeparticipant",
                               new LuckyMeParticipantDTO
                               {
                                   Id = luckyMe.Id,
-                                  UserId = luckyMe.User.Id,
-                                  UserName = luckyMe.User.FirstName + " " + luckyMe.User.LastName,
+                                  UserId = luckyMeUser.Id,
+                                  UserName = luckyMeUser.FirstName + " " + luckyMeUser.LastName,
                                   AmountStaked = luckyMe.Amount.ToString("0.##"),
                                   AmountToWin = luckyMe.AmountToWin.ToString("0.##"),
                                   Status = luckyMe.Status.ToLower(),
@@ -426,6 +431,7 @@ namespace NtoboaFund.Controllers
 
                     }
 
+
                 }
                 catch (Exception ex)
                 {
@@ -449,8 +455,8 @@ namespace NtoboaFund.Controllers
         {
             lock (locker)
             {
-                var scholarship = dbContext.Scholarships.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
-
+                var scholarship = dbContext.Scholarships.Where(i => i.TxRef == txRef).FirstOrDefault();
+                ApplicationUser scholarshipUser = null;
                 if (scholarship == null)
                 {
                     return BadRequest(new { status = "", errorString = "Scholarship stake was not found" });
@@ -460,7 +466,7 @@ namespace NtoboaFund.Controllers
                     return Ok(new { scholarship.Status, message = "Scholarship Already Verified" });
                 }
 
-
+                scholarshipUser = dbContext.Users.Find(scholarship.UserId);
 
 
                 //string resultString = null;
@@ -471,11 +477,11 @@ namespace NtoboaFund.Controllers
                     var VResult = VerifyPayment(scholarship.TransferId, paymentType, status).Result;
                     if (VResult.isConfirmed)
                     {
-                        if (scholarship.Status == "paid")
+                        if (scholarship.Status.ToLower() == "paid")
                             return Ok(new { scholarship.Status, errorString });
 
                         scholarship.Status = "paid";
-                        scholarship.User.Points += scholarship.Amount * Constants.PointConstant;
+                        scholarshipUser.Points += scholarship.Amount * Constants.PointConstant;
                         scholarship.DateDeclared = Misc.GetDrawDate(EntityTypes.Scholarship, scholarship.Period);
                         if (Constants.PaymentGateway == PaymentGateway.slydepay)
                         {
@@ -495,27 +501,27 @@ namespace NtoboaFund.Controllers
                         else
                             scholarship.Status = "failed";
                     }
-
+                    dbContext.Entry(scholarshipUser).State = EntityState.Modified;
                     dbContext.Entry(scholarship).State = EntityState.Modified;
                     dbContext.SaveChanges();
                     //Find the current user associated with the scholarship
 
 
                     //send the currently added participant to all clients
-                    if (scholarship.User != null && scholarship.Status.ToLower() == "paid")
+                    if (scholarshipUser != null && scholarship.Status.ToLower() == "paid")
                     {
                         //Send an Email to the User
-                        MessagingService.SendMail(scholarship.User.FirstName + scholarship.User.LastName, scholarship.User.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Scholarship, scholarship.Amount, scholarship.Period));
+                        MessagingService.SendMail(scholarshipUser.FirstName + scholarshipUser.LastName, scholarshipUser.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Scholarship, scholarship.Amount, scholarship.Period));
 
                         //Send as sms to the user
-                        MessagingService.SendSms(scholarship.User.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Scholarship, scholarship.Amount, scholarship.Period));
+                        MessagingService.SendSms(scholarshipUser.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Scholarship, scholarship.Amount, scholarship.Period));
 
                         StakersHub.Clients.All.SendAsync("addscholarshipparticipant",
                           new ScholarshipParticipantDTO
                           {
                               Id = scholarship.Id,
-                              UserId = scholarship.User.Id,
-                              UserName = scholarship.User.FirstName + " " + scholarship.User.LastName,
+                              UserId = scholarshipUser.Id,
+                              UserName = scholarshipUser.FirstName + " " + scholarshipUser.LastName,
                               AmountStaked = scholarship.Amount.ToString("0.##"),
                               AmountToWin = scholarship.AmountToWin.ToString("0.##"),
                               Status = scholarship.Status.ToLower(),
@@ -572,7 +578,8 @@ namespace NtoboaFund.Controllers
         {
             lock (locker)
             {
-                var business = dbContext.Businesses.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+                var business = dbContext.Businesses.Where(i => i.TxRef == txRef).FirstOrDefault();
+                ApplicationUser businessUser = null;
                 if (business == null)
                 {
                     return BadRequest(new { status = "", errorString = "Business stake was not found" });
@@ -582,7 +589,7 @@ namespace NtoboaFund.Controllers
                     return Ok(new { business.Status, message = "Business Already Verified" });
                 }
 
-
+                businessUser = dbContext.Users.Find(business.UserId);
 
 
                 // string resultString = null;
@@ -593,11 +600,11 @@ namespace NtoboaFund.Controllers
                     var VResult = VerifyPayment(business.TransferId, paymentType, status).Result;
                     if (VResult.isConfirmed)
                     {
-                        if (business.Status == "paid")
+                        if (business.Status.ToLower() == "paid")
                             return Ok(new { business.Status, errorString });
 
                         business.Status = "paid";
-                        business.User.Points += business.Amount * Constants.PointConstant;
+                        businessUser.Points += business.Amount * Constants.PointConstant;
                         business.DateDeclared = Misc.GetDrawDate(EntityTypes.Business, business.Period);
                         if (Constants.PaymentGateway == PaymentGateway.slydepay)
                         {
@@ -620,24 +627,25 @@ namespace NtoboaFund.Controllers
                     }
 
 
+                    dbContext.Entry(businessUser).State = EntityState.Modified;
                     dbContext.Entry(business).State = EntityState.Modified;
                     dbContext.SaveChanges();
                     //Find the current user associated with the business
 
-                    if (business.User != null && business.Status.ToLower() == "paid") //send the currently added participant to all clients
+                    if (businessUser != null && business.Status.ToLower() == "paid") //send the currently added participant to all clients
                     {
                         //Send an Email to the User
-                        MessagingService.SendMail(business.User.FirstName + business.User.LastName, business.User.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Business, business.Amount, business.Period));
+                        MessagingService.SendMail(businessUser.FirstName + businessUser.LastName, businessUser.Email, "Successful Ntoboa Investment", Misc.GetDrawMessage(EntityTypes.Business, business.Amount, business.Period));
 
                         //Send as sms to the user
-                        MessagingService.SendSms(business.User.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Business, business.Amount, business.Period));
+                        MessagingService.SendSms(businessUser.PhoneNumber, Misc.GetDrawMessage(EntityTypes.Business, business.Amount, business.Period));
 
                         StakersHub.Clients.All.SendAsync("addbusinessparticipant",
                                 new BusinessParticipantDTO
                                 {
                                     Id = business.Id,
-                                    UserId = business.User.Id,
-                                    UserName = business.User.FirstName + " " + business.User.LastName,
+                                    UserId = businessUser.Id,
+                                    UserName = businessUser.FirstName + " " + businessUser.LastName,
                                     AmountStaked = business.Amount.ToString("0.##"),
                                     AmountToWin = business.AmountToWin.ToString("0.##"),
                                     Status = business.Status.ToLower(),
@@ -873,7 +881,6 @@ namespace NtoboaFund.Controllers
                 //Passing MobileMoney as payment type to indicate the use of the rest api status check endpoint
                 result = await VerifyReddeCashoutRecord(EntityTypes.Scholarship, "MobileMoney", record);
             }
-
             if (result.Value.isConfirmed)
                 return Ok(new { result.Value.message });
             else
@@ -966,7 +973,7 @@ namespace NtoboaFund.Controllers
             }
             else if (Constants.PaymentGateway == PaymentGateway.redde)
             {
-                if (status == "PAID")
+                if (status?.ToLower() == "paid")
                     return ("PAID", true);
                 else if (status != null)
                     return (status, false);
@@ -1000,15 +1007,15 @@ namespace NtoboaFund.Controllers
 
 
 
-                    var responseMessage = await httpClient.SendAsync(req);
+                    var responseMessage = httpClient.SendAsync(req).Result;
 
-                    var contentString = await responseMessage.Content.ReadAsStringAsync();
+                    var contentString = responseMessage.Content.ReadAsStringAsync().Result;
 
                     try
                     {
                         ReddeStatusResponse response = JsonConvert.DeserializeObject<ReddeStatusResponse>(contentString);
 
-                        if (response.Status == "PAID")
+                        if (response.Status.ToLower() == "paid")
                             return ("PAID", true);
                         else return (response.Status, false);
                     }
@@ -1056,7 +1063,7 @@ namespace NtoboaFund.Controllers
                 dbContext.Payments.Add(payment);
             }
 
-            if (response.Status == "PAID")
+            if (response.Status.ToLower() == "paid")
             {
                 payment.DatePayed = DateTime.Now;
                 payment.IsPaid = true;
@@ -1065,7 +1072,6 @@ namespace NtoboaFund.Controllers
 
             return result;
         }
-
 
         async Task<(string message, bool isConfirmed)> VerifyReddeCashoutRecord(EntityTypes entityType, string paymentType, ReddeCashoutRecord record)
         {

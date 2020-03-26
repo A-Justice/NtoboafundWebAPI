@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using DalSoft.Hosting.BackgroundQueue.DependencyInjection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -105,7 +106,12 @@ namespace NtoboaFund
             services.AddScoped<StakersHub>();
             services.AddScoped<DummyService>();
             services.AddScoped<AnalysisService>();
+            services.AddSingleton<ReddePaymentService>();
             services.AddHostedService<WinnerSelectorHostedService>();
+            services.AddBackgroundQueue(onException: exception =>
+            {
+
+            });
 
             //services.AddTransient(typeof(StakersHub));
             services.AddSignalR(options =>

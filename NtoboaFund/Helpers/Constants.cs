@@ -1,4 +1,6 @@
-﻿namespace NtoboaFund.Helpers
+﻿using System;
+
+namespace NtoboaFund.Helpers
 {
     public enum PaymentGateway
     {
@@ -29,10 +31,10 @@
         /// <summary>
         /// Depicts the treshold used to determine whether participants wins or not
         /// </summary>
-        public static decimal WinnerTreshold { get; set; } = 1 / 3;
+        public static decimal WinnerTreshold { get; set; } = Convert.ToDecimal(1.0 / 3.0);
 
 
-        public static decimal PointConstant { get; set; } = 1 / 5;
+        public static decimal PointConstant { get; set; } = Convert.ToDecimal(3.0);
     }
 
 }

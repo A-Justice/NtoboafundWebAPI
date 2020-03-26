@@ -126,7 +126,7 @@ namespace NtoboaFund.Services
             {
                 var userEditDTO = new UserEditDTO
                 {
-                    Id = User.Id,
+                    //Id = User.Id,
                     FirstName = regUser.FirstName,
                     LastName = regUser.LastName,
                     PhoneNumber = regUser.PhoneNumber,
@@ -149,11 +149,13 @@ namespace NtoboaFund.Services
                 momoDetails.Currency = "GHS";
                 momoDetails.Network = Misc.getNetwork(regUser.PhoneNumber);
                 momoDetails.Number = regUser.PhoneNumber;
-
             }
-            dbContext.MobileMoneyDetails.Add(momoDetails);
+            //dbContext.MobileMoneyDetails.Add(momoDetails);
+
             var bankDetails = new BankDetails();
-            dbContext.BankDetails.Add(bankDetails);
+            // dbContext.BankDetails.Add(bankDetails);
+
+
 
             user = new ApplicationUser
             {
@@ -165,6 +167,10 @@ namespace NtoboaFund.Services
                 MomoDetails = momoDetails,
                 BankDetails = bankDetails
             };
+
+            momoDetails.MobileMoneyDetailsId = user.Id;
+            bankDetails.BankDetailsId = user.Id;
+
 
             if (IsUssdUser)
             {

@@ -590,9 +590,9 @@ namespace NtoboaFund.Services.HostedServices
 
                 if (user.UserType == 0)
                 {
-                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
+                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
 
-                    MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
+                    MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
 
                 }
 
@@ -720,9 +720,9 @@ namespace NtoboaFund.Services.HostedServices
 
                 if (user.UserType == 0)
                 {
-                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
+                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
 
-                    MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
+                    MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
 
                 }
 
@@ -846,9 +846,9 @@ namespace NtoboaFund.Services.HostedServices
 
                 if (user.UserType == 0)
                 {
-                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
+                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
 
-                    MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you 10 points. Invest more to increase your chances of winning. Please Try Again");
+                    MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
 
                 }
                 context.Entry(item).State = EntityState.Modified;
@@ -878,13 +878,6 @@ namespace NtoboaFund.Services.HostedServices
         {
             return totalSeconds - (days * 86400) - (hours * 3600) - (minutes * 60);
         }
-
-
-
-
-
-
-
 
     }
 
@@ -927,7 +920,6 @@ namespace NtoboaFund.Services.HostedServices
 
         }
 
-
         private void daily(object state)
         {
             using (var scope = Services.CreateScope())
@@ -950,7 +942,6 @@ namespace NtoboaFund.Services.HostedServices
 
         }
 
-
         private void weekly(object state)
         {
             using (var scope = Services.CreateScope())
@@ -962,7 +953,6 @@ namespace NtoboaFund.Services.HostedServices
 
         }
 
-
         private void monthly(object state)
         {
             using (var scope = Services.CreateScope())
@@ -973,7 +963,6 @@ namespace NtoboaFund.Services.HostedServices
             }
 
         }
-
 
         public Task StopAsync(CancellationToken cancellationToken)
         {

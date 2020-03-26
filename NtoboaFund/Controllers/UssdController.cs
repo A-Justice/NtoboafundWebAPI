@@ -1,17 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DalSoft.Hosting.BackgroundQueue;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using NtoboaFund.Data;
 using NtoboaFund.Data.DBContext;
-using NtoboaFund.Data.DTO_s;
 using NtoboaFund.Data.Models;
 using NtoboaFund.Helpers;
 using NtoboaFund.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -35,14 +31,18 @@ namespace NtoboaFund.Controllers
         public NtoboaFundDbContext dbContext { get; set; }
 
         public AppSettings Settings { get; set; }
-        public IUserService UserService { get; set; }
-        public UssdController(NtoboaFundDbContext _dbContext, IOptions<AppSettings> appSettings, IUserService userService)
+        public BackgroundQueue BackgroundQueue { get; set; }
+        public ReddePaymentService reddePaymentService { get; set; }
+        public UssdController(NtoboaFundDbContext _dbContext, IOptions<AppSettings> appSettings, BackgroundQueue backgroundQueue, ReddePaymentService _reddePaymentService)
         {
             dbContext = _dbContext;
 
             Settings = appSettings.Value;
 
-            UserService = userService;
+            BackgroundQueue = backgroundQueue;
+
+            reddePaymentService = _reddePaymentService;
+
 
             ussdResponse = new Dictionary<string, UssdResponse>()
             {
@@ -60,7 +60,7 @@ namespace NtoboaFund.Controllers
                 {
                     "1-1",new UssdResponse
                     {
-                        Message = "Choose the luckyme amount you want to stake with\n 1. 1 GHS\n 2. 5 GHS\n 3. 10 GHS\n 4. 20 GHS\n 5. 50 GHS\n 6. 100 GHS\n 7. 500 GHS\n 0. Go Back",
+                        Message = "Choose the luckyme amount you want to invest with\n 1. 1 GHS\n 2. 5 GHS\n 3. 10 GHS\n 4. 20 GHS\n 5. 50 GHS\n 6. 100 GHS\n 7. 500 GHS\n 0. Go Back",
                         Type = "Response",
                         ClientState = "lkm"
                     }
@@ -68,7 +68,7 @@ namespace NtoboaFund.Controllers
                 {
                     "1-2",new UssdResponse
                     {
-                        Message = "Choose the business amount you want to stake with\n 1. 100 GHS\n 2. 500 GHS\n 3. 1000 GHS\n 4. 2000 GHS\n 0. Go Back",
+                        Message = "Choose the business amount you want to invest with\n 1. 100 GHS\n 2. 500 GHS\n 3. 1000 GHS\n 4. 2000 GHS\n 0. Go Back",
                         Type = "Response",
                         ClientState = "bus"
                     }
@@ -76,7 +76,7 @@ namespace NtoboaFund.Controllers
                 {
                     "1-3",new UssdResponse
                     {
-                        Message = "Choose the scholarship amount you want to stake with\n 1. 20 GHS\n 2. 50 GHS\n 3. 100 GHS\n 0. Go Back",
+                        Message = "Choose the scholarship amount you want to invest with\n 1. 20 GHS\n 2. 50 GHS\n 3. 100 GHS\n 0. Go Back",
                         Type = "Response",
                         ClientState = "sch"
                     }
@@ -102,14 +102,14 @@ namespace NtoboaFund.Controllers
                 {
                     "lkm",new UssdResponse
                     {
-                        Message = "Choose your stake period for luckyme\n 1. Daily \n 2. Weekly\n 3. Monthly\n 0. Go Back",
+                        Message = "Choose your investment period for luckyme\n 1. Daily \n 2. Weekly\n 3. Monthly\n 0. Go Back",
                         Type = "Response"
                     }
                 },
                 {
                     "bus",new UssdResponse
                     {
-                        Message = "Choose your stake period for Business\n 1. Monthly\n 0. Go Back",
+                        Message = "Choose your investment period for Business\n 1. Monthly\n 0. Go Back",
                         Type = "Response"
                     }
                 },
@@ -769,19 +769,23 @@ namespace NtoboaFund.Controllers
                             {
                                 responsesch_proceed.Message = getMomoApprovalDirections(Misc.getNetwork(momonumbersch_proceed));
 
-                                await PersistRaveUssdData($"{msgProceedForScholarship}-{ussdRequest.Mobile}");
+                                //await PersistRaveUssdData($"{msgProceedForScholarship}-{ussdRequest.Mobile}");
                             }
                             else if (Constants.PaymentGateway == PaymentGateway.slydepay)
                             {
-                                responsesch_proceed.Message = "Wait For Mobile Money Prompt.";
+                                responsesch_proceed.Message = "Wait For Mobile Money Prompt.\nNB: Mobile money users won't get prompt on insufficient balance.";
 
-                                await PersistScholarshipSlydepayUssdData($"{msgProceedForScholarship}-{ussdRequest.Mobile}");
+                                //await PersistScholarshipSlydepayUssdData($"{msgProceedForScholarship}-{ussdRequest.Mobile}");
                             }
                             else if (Constants.PaymentGateway == PaymentGateway.redde)
                             {
-                                responsesch_proceed.Message = "Wait For Mobile Money Prompt.";
+                                responsesch_proceed.Message = "Wait For Mobile Money Prompt.\nNB: Mobile money users won't get prompt on insufficient balance.";
 
-                                await PersistScholarshipReddeUssdData($"{msgProceedForScholarship}-{ussdRequest.Mobile}");
+                                BackgroundQueue.Enqueue(async cancellationToken =>
+                                {
+                                    reddePaymentService.PersistScholarshipReddeUssdData($"{msgProceedForScholarship}-{ussdRequest.Mobile}");
+                                });
+
                             }
                             return Json(responsesch_proceed);
                         }
@@ -833,18 +837,22 @@ namespace NtoboaFund.Controllers
                             {
                                 response_proceed.Message = getMomoApprovalDirections(Misc.getNetwork(momonumber_proceed));
 
-                                await PersistRaveUssdData($"{msgProceed}-{ussdRequest.Mobile}");
+                                //await PersistRaveUssdData($"{msgProceed}-{ussdRequest.Mobile}");
 
                             }
                             else if (Constants.PaymentGateway == PaymentGateway.slydepay)
                             {
-                                response_proceed.Message = "Wait For Mobile Money Prompt.";
-                                await PersistSlydepayUssdData($"{msgProceed}-{ussdRequest.Mobile}");
+                                response_proceed.Message = "Wait For Mobile Money Prompt.\nNB: Mobile money users won't get prompt on insufficient balance.";
+                                //await PersistSlydepayUssdData($"{msgProceed}-{ussdRequest.Mobile}");
                             }
                             else if (Constants.PaymentGateway == PaymentGateway.redde)
                             {
-                                response_proceed.Message = "Wait For Mobile Money Prompt.";
-                                await PersistReddeUssdData($"{msgProceed}-{ussdRequest.Mobile}");
+                                response_proceed.Message = "Wait For Mobile Money Prompt.\nNB: Mobile money users won't get prompt on insufficient balance.";
+                                BackgroundQueue.Enqueue(async cancellationToken =>
+                                {
+                                    reddePaymentService.PersistReddeUssdData($"{msgProceed}-{ussdRequest.Mobile}");
+
+                                });
                             }
 
                             return Json(response_proceed);
@@ -871,438 +879,449 @@ namespace NtoboaFund.Controllers
             }
         }
 
-        async Task PersistSlydepayUssdData(string requestString)
-        {
-            //types : lkm,bus,sch
-            var match = Regex.Match(requestString, @"(?<type>\w+)-(?<amount>\d+)-(?<period>\w+)-(?<mobilenumber>\w+)-(?<momonumber>\w+)");
-            var type = match.Groups["type"].ToString();
-            var amount = Convert.ToDecimal(match.Groups["amount"].ToString());
-            var period = match.Groups["period"].ToString();
-            var mobileNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["mobilenumber"].ToString());
-            var momoNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["momonumber"].ToString());
-            var user = await getMatchedUser(mobileNumber);
-
-            var txRef = Misc.getTxRef(mobileNumber);
-            IStakeType stakeType = null;
-            EntityTypes entityType;
-
-
-
-            if (type == "lkm")
-            {
-                entityType = EntityTypes.Luckyme;
-                stakeType = new LuckyMe
-                {
-                    Amount = amount,
-                    Date = DateTime.Now.ToLongDateString(),
-                    AmountToWin = amount * Constants.LuckymeStakeOdds,
-                    Status = "pending",
-                    TxRef = txRef,
-                    Period = period,
-                    User = user
-                };
-
-                dbContext.LuckyMes.Add(stakeType as LuckyMe);
-
-            }
-            else if (type == "bus")
-            {
-                entityType = EntityTypes.Business;
-                stakeType = new Business
-                {
-                    Amount = amount,
-                    Date = DateTime.Now.ToLongDateString(),
-                    AmountToWin = amount * Constants.BusinessStakeOdds,
-                    Status = "pending",
-                    TxRef = txRef,
-                    Period = period,
-                    User = user
-                };
-
-                dbContext.Businesses.Add(stakeType as Business);
-
-            }
-
-
-            await dbContext.SaveChangesAsync();
-
-            try
-            {
-                var token = await Misc.GenerateAndSendSlydePayMomoInvoice(EntityTypes.Scholarship, stakeType, Settings.SlydePaySettings, Misc.FormatGhanaianPhoneNumberWp(momoNumber));
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
-        async Task PersistScholarshipSlydepayUssdData(string requestString)
-        {
-            //types : lkm,bus,sch
-            var regex = new Regex(@"^(?<type>\w+)\*(?<amount>\d+)-(?<period>\w+)-(?<institution>[\w\s]+)-(?<program>[\w\s]+)-(?<studentid>[\w\s]+)-(?<playertype>\d+)-(?<usernumber>\d+)-(?<momonumber>\d+)$").Match(requestString);
-            var type = regex.Groups["type"].ToString();
-            var amount = regex.Groups["amount"].ToString();
-            var period = regex.Groups["period"].ToString();
-            var institution = regex.Groups["institution"].ToString();
-            var program = regex.Groups["program"].ToString();
-            var studentId = regex.Groups["studentid"].ToString();
-            var playerType = regex.Groups["playertype"].ToString();
-            var mobileNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["usernumber"].ToString());
-            var momoNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["momonumber"].ToString());
-
-
-            var user = await getMatchedUser(mobileNumber);
-            var txRef = Misc.getTxRef(mobileNumber);
-
-            var scholarship = new Scholarship
-            {
-                Amount = Convert.ToDecimal(amount),
-                Date = DateTime.Now.ToLongDateString(),
-                AmountToWin = Convert.ToDecimal(amount) * Constants.ScholarshipStakeOdds,
-                Status = "pending",
-                TxRef = txRef,
-                Period = period,
-                User = user,
-                Institution = institution,
-                Program = program,
-                StudentId = studentId,
-                PlayerType = getPlayerType(playerType)
-            };
-
-            dbContext.Scholarships.Add(scholarship);
-
-
-            await dbContext.SaveChangesAsync();
-
-            try
-            {
-                var token = await Misc.GenerateAndSendSlydePayMomoInvoice(EntityTypes.Scholarship, scholarship, Settings.SlydePaySettings, Misc.FormatGhanaianPhoneNumberWp(momoNumber));
-
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
-        async Task PersistReddeUssdData(string requestString)
-        {
-            //types : lkm,bus,sch
-            var match = Regex.Match(requestString, @"(?<type>\w+)-(?<amount>\d+)-(?<period>\w+)-(?<momonumber>\w+)-(?<voucher>[\w\s]+)-(?<mobilenumber>\w+)");
-            var type = match.Groups["type"].ToString();
-            var amount = Convert.ToDecimal(match.Groups["amount"].ToString());
-            var period = match.Groups["period"].ToString();
-            var momoNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["momonumber"].ToString());
-            var voucher = match.Groups["voucher"].ToString();
-            var mobileNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["mobilenumber"].ToString());
-            var user = await getMatchedUser(mobileNumber);
-
-            var txRef = Misc.getTxRef(mobileNumber);
-            IStakeType stakeType = null;
-            EntityTypes entityType;
-
-
-
-            if (type == "lkm")
-            {
-                entityType = EntityTypes.Luckyme;
-                stakeType = new LuckyMe
-                {
-                    Amount = amount,
-                    Date = DateTime.Now.ToLongDateString(),
-                    AmountToWin = amount * Constants.LuckymeStakeOdds,
-                    Status = "pending",
-                    TxRef = txRef,
-                    Period = period,
-                    User = user
-                };
-
-                dbContext.LuckyMes.Add(stakeType as LuckyMe);
-
-            }
-            else if (type == "bus")
-            {
-                entityType = EntityTypes.Business;
-                stakeType = new Business
-                {
-                    Amount = amount,
-                    Date = DateTime.Now.ToLongDateString(),
-                    AmountToWin = amount * Constants.BusinessStakeOdds,
-                    Status = "pending",
-                    TxRef = txRef,
-                    Period = period,
-                    User = user
-                };
-
-                dbContext.Businesses.Add(stakeType as Business);
-
-            }
-
-
-            await dbContext.SaveChangesAsync();
-
-            try
-            {
-                var transactionId = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Scholarship, stakeType, Settings.ReddeSettings, $"{Misc.FormatGhanaianPhoneNumberWp(momoNumber)}*{voucher}");
-                if (type == "lkm")
-                {
-                    var luckyMe = stakeType as LuckyMe;
-                    luckyMe.TransferId = transactionId;
-                    dbContext.Entry(luckyMe).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-                    await dbContext.SaveChangesAsync();
-                }
-                else if (type == "bus")
-                {
-                    var business = stakeType as Business;
-                    business.TransferId = transactionId;
-                    dbContext.Entry(business).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
-                    await dbContext.SaveChangesAsync();
-                }
-
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
-        async Task PersistScholarshipReddeUssdData(string requestString)
-        {
-            //types : lkm,bus,sch
-            var regex = new Regex(@"^(?<type>\w+)\*(?<amount>\d+)-(?<period>\w+)-(?<institution>[\w\s]+)-(?<program>[\w\s]+)-(?<studentid>[\w\s]+)-(?<playertype>\d+)-(?<momonumber>\d+)-(?<voucher>[\w\s]+)-(?<usernumber>\d+)$").Match(requestString);
-            var type = regex.Groups["type"].ToString();
-            var amount = regex.Groups["amount"].ToString();
-            var period = regex.Groups["period"].ToString();
-            var institution = regex.Groups["institution"].ToString();
-            var program = regex.Groups["program"].ToString();
-            var studentId = regex.Groups["studentid"].ToString();
-            var playerType = regex.Groups["playertype"].ToString();
-            var voucher = regex.Groups["voucher"].ToString();
-            var mobileNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["usernumber"].ToString());
-            var momoNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["momonumber"].ToString());
-
-
-            var user = await getMatchedUser(mobileNumber);
-            var txRef = Misc.getTxRef(mobileNumber);
-
-            var scholarship = new Scholarship
-            {
-                Amount = Convert.ToDecimal(amount),
-                Date = DateTime.Now.ToLongDateString(),
-                AmountToWin = Convert.ToDecimal(amount) * Constants.ScholarshipStakeOdds,
-                Status = "pending",
-                TxRef = txRef,
-                Period = period,
-                User = user,
-                Institution = institution,
-                Program = program,
-                StudentId = studentId,
-                PlayerType = getPlayerType(playerType)
-            };
-
-
-
-
-            try
-            {
-                var transactionId = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Scholarship, scholarship, Settings.ReddeSettings, $"{Misc.FormatGhanaianPhoneNumberWp(momoNumber)}*{voucher}");
-                scholarship.TransferId = transactionId;
-                dbContext.Scholarships.Add(scholarship);
-                await dbContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
-        async Task PersistRaveUssdData(string requestString)
-        {
-            //types : lkm,bus,sch
-            var match = Regex.Match(requestString, @"(?<type>\w+)-(?<amount>\d+)-(?<period>\w+)-(?<mobilenumber>\w+)-(?<momonumber>\w+)");
-            var type = match.Groups["type"].ToString();
-            var amount = Convert.ToDecimal(match.Groups["amount"].ToString());
-            var period = match.Groups["period"].ToString();
-            var mobileNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["mobilenumber"].ToString());
-            var momoNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["momonumber"].ToString());
-            var user = await getMatchedUser(mobileNumber);
-
-            var raveRequest = new RaveRequestDTO()
-            {
-                amount = amount.ToString(),
-                txRef = Misc.getTxRef(mobileNumber),
-                orderRef = getOrderRef(mobileNumber),
-                email = user.Email,
-                currency = "GHS",
-                PBFPubKey = Settings.FlatterWaveSettings.GetPublicApiKey(),
-                phonenumber = momoNumber,
-                is_mobile_money_gh = 1,
-                country = "GH",
-                payment_type = "mobilemoneygh",
-                network = Misc.getNetwork(momoNumber),
-                firstname = user.FirstName,
-                lastname = user.LastName
-            };
-
-
-            if (type == "lkm")
-            {
-
-                var luckyme = new LuckyMe
-                {
-                    Amount = amount,
-                    Date = DateTime.Now.ToLongDateString(),
-                    AmountToWin = amount * Constants.LuckymeStakeOdds,
-                    Status = "pending",
-                    TxRef = raveRequest.txRef,
-                    Period = period,
-                    User = user
-                };
-
-                dbContext.LuckyMes.Add(luckyme);
-
-            }
-            else if (type == "bus")
-            {
-                var business = new Business
-                {
-                    Amount = amount,
-                    Date = DateTime.Now.ToLongDateString(),
-                    AmountToWin = amount * Constants.BusinessStakeOdds,
-                    Status = "pending",
-                    TxRef = raveRequest.txRef,
-                    Period = period,
-                    User = user
-                };
-
-                dbContext.Businesses.Add(business);
-
-            }
-            else if (type == "sch")
-            {
-                var scholarship = new Scholarship
-                {
-                    Amount = amount,
-                    Date = DateTime.Now.ToLongDateString(),
-                    AmountToWin = amount * Constants.ScholarshipStakeOdds,
-                    Status = "pending",
-                    TxRef = raveRequest.txRef,
-                    Period = period,
-                    User = user
-                };
-
-                dbContext.Scholarships.Add(scholarship);
-
-            }
-
-            await dbContext.SaveChangesAsync();
-
-            var httpClient = new HttpClient();
-
-            try
-            {
-                var data = JsonConvert.SerializeObject(raveRequest, Misc.getDefaultResolverJsonSettings());
-                var encryptionKey = RaveEncryption.GetEncryptionKey(Settings.FlatterWaveSettings.GetApiSecret());
-                var encryptedRequest = RaveEncryption.EncryptData(encryptionKey, data);
-                var payloadData = new
-                {
-                    PBFPubKey = Settings.FlatterWaveSettings.GetPublicApiKey(),
-                    client = encryptedRequest,
-                    alg = "3DES-24"
-                };
-                var payload = JsonConvert.SerializeObject(payloadData, Misc.getDefaultResolverJsonSettings());
-                var stringContent = new StringContent(payload);
-                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
-                Task.Run(() =>
-                {
-                    var m = httpClient.PostAsync("https://api.ravepay.co/flwv3-pug/getpaidx/api/charge", stringContent).Result;
-                });
-
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
-        async Task PersistScholarshipRaveUssdData(string requestString)
-        {
-            //types : lkm,bus,sch
-            var regex = new Regex(@"^(?<type>\w+)\*(?<amount>\d+)-(?<period>\w+)-(?<institution>[\w\s]+)-(?<program>[\w\s]+)-(?<studentid>[\w\s]+)-(?<playertype>\d+)-(?<usernumber>\d+)-(?<momonumber>\d+)$").Match(requestString);
-            var type = regex.Groups["type"].ToString();
-            var amount = regex.Groups["amount"].ToString();
-            var period = regex.Groups["period"].ToString();
-            var institution = regex.Groups["institution"].ToString();
-            var program = regex.Groups["program"].ToString();
-            var studentId = regex.Groups["studentid"].ToString();
-            var playerType = regex.Groups["playertype"].ToString();
-            var mobileNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["usernumber"].ToString());
-            var momoNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["momonumber"].ToString());
-
-
-            var user = await getMatchedUser(mobileNumber);
-
-            var raveRequest = new RaveRequestDTO()
-            {
-                amount = amount.ToString(),
-                txRef = Misc.getTxRef(mobileNumber),
-                orderRef = getOrderRef(mobileNumber),
-                email = user.Email,
-                currency = "GHS",
-                PBFPubKey = Settings.FlatterWaveSettings.GetPublicApiKey(),
-                phonenumber = momoNumber,
-                is_mobile_money_gh = 1,
-                country = "GH",
-                payment_type = "mobilemoneygh",
-                network = Misc.getNetwork(momoNumber),
-                firstname = user.FirstName,
-                lastname = user.LastName
-            };
-
-            var scholarship = new Scholarship
-            {
-                Amount = Convert.ToDecimal(amount),
-                Date = DateTime.Now.ToLongDateString(),
-                AmountToWin = Convert.ToDecimal(amount) * Constants.ScholarshipStakeOdds,
-                Status = "pending",
-                TxRef = raveRequest.txRef,
-                Period = period,
-                User = user,
-                Institution = institution,
-                Program = program,
-                StudentId = studentId,
-                PlayerType = getPlayerType(playerType)
-            };
-
-            dbContext.Scholarships.Add(scholarship);
-
-
-            await dbContext.SaveChangesAsync();
-
-            var httpClient = new HttpClient();
-
-            try
-            {
-                var data = JsonConvert.SerializeObject(raveRequest, Misc.getDefaultResolverJsonSettings());
-                var encryptionKey = RaveEncryption.GetEncryptionKey(Settings.FlatterWaveSettings.GetApiSecret());
-                var encryptedRequest = RaveEncryption.EncryptData(encryptionKey, data);
-                var payloadData = new
-                {
-                    PBFPubKey = Settings.FlatterWaveSettings.GetPublicApiKey(),
-                    client = encryptedRequest,
-                    alg = "3DES-24"
-                };
-                var payload = JsonConvert.SerializeObject(payloadData, Misc.getDefaultResolverJsonSettings());
-                var stringContent = new StringContent(payload);
-                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
-                Task.Run(() =>
-                {
-                    var m = httpClient.PostAsync("https://api.ravepay.co/flwv3-pug/getpaidx/api/charge", stringContent).Result;
-                });
-
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
+        #region Slydepay
+        //async Task PersistSlydepayUssdData(string requestString)
+        //{
+        //    //types : lkm,bus,sch
+        //    var match = Regex.Match(requestString, @"(?<type>\w+)-(?<amount>\d+)-(?<period>\w+)-(?<mobilenumber>\w+)-(?<momonumber>\w+)");
+        //    var type = match.Groups["type"].ToString();
+        //    var amount = Convert.ToDecimal(match.Groups["amount"].ToString());
+        //    var period = match.Groups["period"].ToString();
+        //    var mobileNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["mobilenumber"].ToString());
+        //    var momoNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["momonumber"].ToString());
+        //    var user = await getMatchedUser(mobileNumber);
+
+        //    var txRef = Misc.getTxRef(mobileNumber);
+        //    IStakeType stakeType = null;
+        //    EntityTypes entityType;
+
+
+
+        //    if (type == "lkm")
+        //    {
+        //        entityType = EntityTypes.Luckyme;
+        //        stakeType = new LuckyMe
+        //        {
+        //            Amount = amount,
+        //            Date = DateTime.Now.ToLongDateString(),
+        //            AmountToWin = amount * Constants.LuckymeStakeOdds,
+        //            Status = "pending",
+        //            TxRef = txRef,
+        //            Period = period,
+        //            User = user
+        //        };
+
+        //        dbContext.LuckyMes.Add(stakeType as LuckyMe);
+
+        //    }
+        //    else if (type == "bus")
+        //    {
+        //        entityType = EntityTypes.Business;
+        //        stakeType = new Business
+        //        {
+        //            Amount = amount,
+        //            Date = DateTime.Now.ToLongDateString(),
+        //            AmountToWin = amount * Constants.BusinessStakeOdds,
+        //            Status = "pending",
+        //            TxRef = txRef,
+        //            Period = period,
+        //            User = user
+        //        };
+
+        //        dbContext.Businesses.Add(stakeType as Business);
+
+        //    }
+
+
+        //    await dbContext.SaveChangesAsync();
+
+        //    try
+        //    {
+        //        var token = await Misc.GenerateAndSendSlydePayMomoInvoice(EntityTypes.Scholarship, stakeType, Settings.SlydePaySettings, Misc.FormatGhanaianPhoneNumberWp(momoNumber));
+        //    }
+        //    catch (Exception ex)
+        //    {
+
+        //    }
+        //}
+        //async Task PersistScholarshipSlydepayUssdData(string requestString)
+        //{
+        //    //types : lkm,bus,sch
+        //    var regex = new Regex(@"^(?<type>\w+)\*(?<amount>\d+)-(?<period>\w+)-(?<institution>[\w\s]+)-(?<program>[\w\s]+)-(?<studentid>[\w\s]+)-(?<playertype>\d+)-(?<usernumber>\d+)-(?<momonumber>\d+)$").Match(requestString);
+        //    var type = regex.Groups["type"].ToString();
+        //    var amount = regex.Groups["amount"].ToString();
+        //    var period = regex.Groups["period"].ToString();
+        //    var institution = regex.Groups["institution"].ToString();
+        //    var program = regex.Groups["program"].ToString();
+        //    var studentId = regex.Groups["studentid"].ToString();
+        //    var playerType = regex.Groups["playertype"].ToString();
+        //    var mobileNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["usernumber"].ToString());
+        //    var momoNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["momonumber"].ToString());
+
+
+        //    var user = await getMatchedUser(mobileNumber);
+        //    var txRef = Misc.getTxRef(mobileNumber);
+
+        //    var scholarship = new Scholarship
+        //    {
+        //        Amount = Convert.ToDecimal(amount),
+        //        Date = DateTime.Now.ToLongDateString(),
+        //        AmountToWin = Convert.ToDecimal(amount) * Constants.ScholarshipStakeOdds,
+        //        Status = "pending",
+        //        TxRef = txRef,
+        //        Period = period,
+        //        User = user,
+        //        Institution = institution,
+        //        Program = program,
+        //        StudentId = studentId,
+        //        PlayerType = getPlayerType(playerType)
+        //    };
+
+        //    dbContext.Scholarships.Add(scholarship);
+
+
+        //    await dbContext.SaveChangesAsync();
+
+        //    try
+        //    {
+        //        var token = await Misc.GenerateAndSendSlydePayMomoInvoice(EntityTypes.Scholarship, scholarship, Settings.SlydePaySettings, Misc.FormatGhanaianPhoneNumberWp(momoNumber));
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+
+        //    }
+        //}
+        #endregion
+
+        #region Redded
+        //async Task PersistReddeUssdData(string requestString)
+        //{
+        //    //types : lkm,bus,sch
+        //    var match = Regex.Match(requestString, @"(?<type>\w+)-(?<amount>\d+)-(?<period>\w+)-(?<momonumber>\w+)-(?<voucher>[\w\s]+)-(?<mobilenumber>\w+)");
+        //    var type = match.Groups["type"].ToString();
+        //    var amount = Convert.ToDecimal(match.Groups["amount"].ToString());
+        //    var period = match.Groups["period"].ToString();
+        //    var momoNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["momonumber"].ToString());
+        //    var voucher = match.Groups["voucher"].ToString();
+        //    var mobileNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["mobilenumber"].ToString());
+        //    var user = await getMatchedUser(mobileNumber);
+
+        //    var txRef = Misc.getTxRef(mobileNumber);
+        //    IStakeType stakeType = null;
+        //    EntityTypes entityType;
+
+
+
+        //    if (type == "lkm")
+        //    {
+        //        entityType = EntityTypes.Luckyme;
+        //        stakeType = new LuckyMe
+        //        {
+        //            Amount = amount,
+        //            Date = DateTime.Now.ToLongDateString(),
+        //            AmountToWin = amount * Constants.LuckymeStakeOdds,
+        //            Status = "pending",
+        //            TxRef = txRef,
+        //            Period = period,
+        //            User = user
+        //        };
+
+        //        dbContext.LuckyMes.Add(stakeType as LuckyMe);
+
+        //    }
+        //    else if (type == "bus")
+        //    {
+        //        entityType = EntityTypes.Business;
+        //        stakeType = new Business
+        //        {
+        //            Amount = amount,
+        //            Date = DateTime.Now.ToLongDateString(),
+        //            AmountToWin = amount * Constants.BusinessStakeOdds,
+        //            Status = "pending",
+        //            TxRef = txRef,
+        //            Period = period,
+        //            User = user
+        //        };
+
+        //        dbContext.Businesses.Add(stakeType as Business);
+
+        //    }
+
+
+        //    await dbContext.SaveChangesAsync();
+
+        //    try
+        //    {
+        //        var transactionId = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Scholarship, stakeType, Settings.ReddeSettings, $"{Misc.FormatGhanaianPhoneNumberWp(momoNumber)}*{voucher}");
+        //        if (type == "lkm")
+        //        {
+        //            var luckyMe = stakeType as LuckyMe;
+        //            luckyMe.TransferId = transactionId;
+        //            dbContext.Entry(luckyMe).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+        //            await dbContext.SaveChangesAsync();
+        //        }
+        //        else if (type == "bus")
+        //        {
+        //            var business = stakeType as Business;
+        //            business.TransferId = transactionId;
+        //            dbContext.Entry(business).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
+        //            await dbContext.SaveChangesAsync();
+        //        }
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+
+        //    }
+        //}
+        //async Task PersistScholarshipReddeUssdData(string requestString)
+        //{
+        //    //types : lkm,bus,sch
+        //    var regex = new Regex(@"^(?<type>\w+)\*(?<amount>\d+)-(?<period>\w+)-(?<institution>[\w\s]+)-(?<program>[\w\s]+)-(?<studentid>[\w\s]+)-(?<playertype>\d+)-(?<momonumber>\d+)-(?<voucher>[\w\s]+)-(?<usernumber>\d+)$").Match(requestString);
+        //    var type = regex.Groups["type"].ToString();
+        //    var amount = regex.Groups["amount"].ToString();
+        //    var period = regex.Groups["period"].ToString();
+        //    var institution = regex.Groups["institution"].ToString();
+        //    var program = regex.Groups["program"].ToString();
+        //    var studentId = regex.Groups["studentid"].ToString();
+        //    var playerType = regex.Groups["playertype"].ToString();
+        //    var voucher = regex.Groups["voucher"].ToString();
+        //    var mobileNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["usernumber"].ToString());
+        //    var momoNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["momonumber"].ToString());
+
+
+        //    var user = await getMatchedUser(mobileNumber);
+        //    var txRef = Misc.getTxRef(mobileNumber);
+
+        //    var scholarship = new Scholarship
+        //    {
+        //        Amount = Convert.ToDecimal(amount),
+        //        Date = DateTime.Now.ToLongDateString(),
+        //        AmountToWin = Convert.ToDecimal(amount) * Constants.ScholarshipStakeOdds,
+        //        Status = "pending",
+        //        TxRef = txRef,
+        //        Period = period,
+        //        User = user,
+        //        Institution = institution,
+        //        Program = program,
+        //        StudentId = studentId,
+        //        PlayerType = getPlayerType(playerType)
+        //    };
+
+
+
+
+        //    try
+        //    {
+        //        var transactionId = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Scholarship, scholarship, Settings.ReddeSettings, $"{Misc.FormatGhanaianPhoneNumberWp(momoNumber)}*{voucher}");
+        //        scholarship.TransferId = transactionId;
+        //        dbContext.Scholarships.Add(scholarship);
+        //        await dbContext.SaveChangesAsync();
+        //    }
+        //    catch (Exception ex)
+        //    {
+
+        //    }
+        //}
+
+        #endregion
+
+        #region Rave
+        //async Task PersistRaveUssdData(string requestString)
+        //{
+        //    //types : lkm,bus,sch
+        //    var match = Regex.Match(requestString, @"(?<type>\w+)-(?<amount>\d+)-(?<period>\w+)-(?<mobilenumber>\w+)-(?<momonumber>\w+)");
+        //    var type = match.Groups["type"].ToString();
+        //    var amount = Convert.ToDecimal(match.Groups["amount"].ToString());
+        //    var period = match.Groups["period"].ToString();
+        //    var mobileNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["mobilenumber"].ToString());
+        //    var momoNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["momonumber"].ToString());
+        //    var user = await getMatchedUser(mobileNumber);
+
+        //    var raveRequest = new RaveRequestDTO()
+        //    {
+        //        amount = amount.ToString(),
+        //        txRef = Misc.getTxRef(mobileNumber),
+        //        orderRef = getOrderRef(mobileNumber),
+        //        email = user.Email,
+        //        currency = "GHS",
+        //        PBFPubKey = Settings.FlatterWaveSettings.GetPublicApiKey(),
+        //        phonenumber = momoNumber,
+        //        is_mobile_money_gh = 1,
+        //        country = "GH",
+        //        payment_type = "mobilemoneygh",
+        //        network = Misc.getNetwork(momoNumber),
+        //        firstname = user.FirstName,
+        //        lastname = user.LastName
+        //    };
+
+
+        //    if (type == "lkm")
+        //    {
+
+        //        var luckyme = new LuckyMe
+        //        {
+        //            Amount = amount,
+        //            Date = DateTime.Now.ToLongDateString(),
+        //            AmountToWin = amount * Constants.LuckymeStakeOdds,
+        //            Status = "pending",
+        //            TxRef = raveRequest.txRef,
+        //            Period = period,
+        //            User = user
+        //        };
+
+        //        dbContext.LuckyMes.Add(luckyme);
+
+        //    }
+        //    else if (type == "bus")
+        //    {
+        //        var business = new Business
+        //        {
+        //            Amount = amount,
+        //            Date = DateTime.Now.ToLongDateString(),
+        //            AmountToWin = amount * Constants.BusinessStakeOdds,
+        //            Status = "pending",
+        //            TxRef = raveRequest.txRef,
+        //            Period = period,
+        //            User = user
+        //        };
+
+        //        dbContext.Businesses.Add(business);
+
+        //    }
+        //    else if (type == "sch")
+        //    {
+        //        var scholarship = new Scholarship
+        //        {
+        //            Amount = amount,
+        //            Date = DateTime.Now.ToLongDateString(),
+        //            AmountToWin = amount * Constants.ScholarshipStakeOdds,
+        //            Status = "pending",
+        //            TxRef = raveRequest.txRef,
+        //            Period = period,
+        //            User = user
+        //        };
+
+        //        dbContext.Scholarships.Add(scholarship);
+
+        //    }
+
+        //    await dbContext.SaveChangesAsync();
+
+        //    var httpClient = new HttpClient();
+
+        //    try
+        //    {
+        //        var data = JsonConvert.SerializeObject(raveRequest, Misc.getDefaultResolverJsonSettings());
+        //        var encryptionKey = RaveEncryption.GetEncryptionKey(Settings.FlatterWaveSettings.GetApiSecret());
+        //        var encryptedRequest = RaveEncryption.EncryptData(encryptionKey, data);
+        //        var payloadData = new
+        //        {
+        //            PBFPubKey = Settings.FlatterWaveSettings.GetPublicApiKey(),
+        //            client = encryptedRequest,
+        //            alg = "3DES-24"
+        //        };
+        //        var payload = JsonConvert.SerializeObject(payloadData, Misc.getDefaultResolverJsonSettings());
+        //        var stringContent = new StringContent(payload);
+        //        stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+        //        Task.Run(() =>
+        //        {
+        //            var m = httpClient.PostAsync("https://api.ravepay.co/flwv3-pug/getpaidx/api/charge", stringContent).Result;
+        //        });
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+
+        //    }
+        //}
+        //async Task PersistScholarshipRaveUssdData(string requestString)
+        //{
+        //    //types : lkm,bus,sch
+        //    var regex = new Regex(@"^(?<type>\w+)\*(?<amount>\d+)-(?<period>\w+)-(?<institution>[\w\s]+)-(?<program>[\w\s]+)-(?<studentid>[\w\s]+)-(?<playertype>\d+)-(?<usernumber>\d+)-(?<momonumber>\d+)$").Match(requestString);
+        //    var type = regex.Groups["type"].ToString();
+        //    var amount = regex.Groups["amount"].ToString();
+        //    var period = regex.Groups["period"].ToString();
+        //    var institution = regex.Groups["institution"].ToString();
+        //    var program = regex.Groups["program"].ToString();
+        //    var studentId = regex.Groups["studentid"].ToString();
+        //    var playerType = regex.Groups["playertype"].ToString();
+        //    var mobileNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["usernumber"].ToString());
+        //    var momoNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["momonumber"].ToString());
+
+
+        //    var user = await getMatchedUser(mobileNumber);
+
+        //    var raveRequest = new RaveRequestDTO()
+        //    {
+        //        amount = amount.ToString(),
+        //        txRef = Misc.getTxRef(mobileNumber),
+        //        orderRef = getOrderRef(mobileNumber),
+        //        email = user.Email,
+        //        currency = "GHS",
+        //        PBFPubKey = Settings.FlatterWaveSettings.GetPublicApiKey(),
+        //        phonenumber = momoNumber,
+        //        is_mobile_money_gh = 1,
+        //        country = "GH",
+        //        payment_type = "mobilemoneygh",
+        //        network = Misc.getNetwork(momoNumber),
+        //        firstname = user.FirstName,
+        //        lastname = user.LastName
+        //    };
+
+        //    var scholarship = new Scholarship
+        //    {
+        //        Amount = Convert.ToDecimal(amount),
+        //        Date = DateTime.Now.ToLongDateString(),
+        //        AmountToWin = Convert.ToDecimal(amount) * Constants.ScholarshipStakeOdds,
+        //        Status = "pending",
+        //        TxRef = raveRequest.txRef,
+        //        Period = period,
+        //        User = user,
+        //        Institution = institution,
+        //        Program = program,
+        //        StudentId = studentId,
+        //        PlayerType = getPlayerType(playerType)
+        //    };
+
+        //    dbContext.Scholarships.Add(scholarship);
+
+
+        //    await dbContext.SaveChangesAsync();
+
+        //    var httpClient = new HttpClient();
+
+        //    try
+        //    {
+        //        var data = JsonConvert.SerializeObject(raveRequest, Misc.getDefaultResolverJsonSettings());
+        //        var encryptionKey = RaveEncryption.GetEncryptionKey(Settings.FlatterWaveSettings.GetApiSecret());
+        //        var encryptedRequest = RaveEncryption.EncryptData(encryptionKey, data);
+        //        var payloadData = new
+        //        {
+        //            PBFPubKey = Settings.FlatterWaveSettings.GetPublicApiKey(),
+        //            client = encryptedRequest,
+        //            alg = "3DES-24"
+        //        };
+        //        var payload = JsonConvert.SerializeObject(payloadData, Misc.getDefaultResolverJsonSettings());
+        //        var stringContent = new StringContent(payload);
+        //        stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+        //        Task.Run(() =>
+        //        {
+        //            var m = httpClient.PostAsync("https://api.ravepay.co/flwv3-pug/getpaidx/api/charge", stringContent).Result;
+        //        });
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+
+        //    }
+        //}
+
+        #endregion
+
 
         /// <summary>
         /// Get the steps to take before approving the momo transaction
@@ -1324,10 +1343,12 @@ namespace NtoboaFund.Controllers
 
         string getLiveStakesForUser(string phoneNumber)
         {
-            var luckyMes = dbContext.LuckyMes.Where(i => i.Status.ToLower() == "paid" && i.User.PhoneNumber == $"{phoneNumber}");
-            var businesses = dbContext.Businesses.Where(i => i.Status.ToLower() == "paid" && i.User.PhoneNumber == $"{phoneNumber}");
-            var scholarships = dbContext.Scholarships.Where(i => i.Status.ToLower() == "paid" && i.User.PhoneNumber == $"{phoneNumber}");
+            ApplicationUser user = dbContext.Users.Where(i => i.PhoneNumber == phoneNumber).FirstOrDefault();
+            var luckyMes = dbContext.LuckyMes.Where(i => i.Status.ToLower() == "paid" && i.User.PhoneNumber == phoneNumber);
+            var businesses = dbContext.Businesses.Where(i => i.Status.ToLower() == "paid" && i.User.PhoneNumber == phoneNumber);
+            var scholarships = dbContext.Scholarships.Where(i => i.Status.ToLower() == "paid" && i.User.PhoneNumber == phoneNumber);
             StringBuilder sbuilder = new StringBuilder();
+
             foreach (var item in luckyMes)
             {
                 sbuilder.AppendLine($"LuckyMe {(int)item.Amount} Cedi(s) {item.Period}");
@@ -1343,8 +1364,10 @@ namespace NtoboaFund.Controllers
 
             if (string.IsNullOrEmpty(sbuilder.ToString()))
             {
+
                 sbuilder.AppendLine("You have no live investments");
             }
+            sbuilder.Insert(0, $"You have {user.Points} Points\n");
 
             return sbuilder.ToString();
         }
@@ -1359,30 +1382,30 @@ namespace NtoboaFund.Controllers
             return $"inv_{ userCode}_{timeStamp}";
         }
 
-        async Task<ApplicationUser> getMatchedUser(string phoneNumber)
-        {
-            phoneNumber = "0" + Misc.NormalizePhoneNumber(phoneNumber);
+        //async Task<ApplicationUser> getMatchedUser(string phoneNumber)
+        //{
+        //    phoneNumber = "0" + Misc.NormalizePhoneNumber(phoneNumber);
 
-            var user = dbContext.Users.FirstOrDefault(i => Misc.NormalizePhoneNumber(i.PhoneNumber) == Misc.NormalizePhoneNumber(phoneNumber));
+        //    var user = dbContext.Users.FirstOrDefault(i => Misc.NormalizePhoneNumber(i.PhoneNumber) == Misc.NormalizePhoneNumber(phoneNumber));
 
-            if (user != null)
-                return user;
+        //    if (user != null)
+        //        return user;
 
-            var regDTO = new RegistrationDTO
-            {
-                FirstName = phoneNumber,
-                LastName = "",
-                PhoneNumber = phoneNumber,
-                Email = $"ntoboafund.{phoneNumber}@gmail.com",
-                Password = phoneNumber,
-                ConfirmPassword = phoneNumber
-            };
-            var result = await UserService.Register(regDTO, true);
-            //dbContext.Users.Add(user);
-            //await dbContext.SaveChangesAsync();
+        //    var regDTO = new RegistrationDTO
+        //    {
+        //        FirstName = phoneNumber,
+        //        LastName = "",
+        //        PhoneNumber = phoneNumber,
+        //        Email = $"ntoboafund.{phoneNumber}@gmail.com",
+        //        Password = phoneNumber,
+        //        ConfirmPassword = phoneNumber
+        //    };
+        //    var result = await UserService.Register(regDTO, true);
+        //    //dbContext.Users.Add(user);
+        //    //await dbContext.SaveChangesAsync();
 
-            return result.Item1;
-        }
+        //    return result.Item1;
+        //}
 
         string getPlayerType(string index)
         {
