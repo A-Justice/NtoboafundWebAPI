@@ -19,7 +19,7 @@ namespace NtoboaFund.SignalR
 
         public async Task GetCurrentScholarshipWinners()
         {
-            var scholarshipParticipants = dbContext.Scholarships.Where(i => i.Status == "won").Include("User").Select(i => new ScholarshipParticipantDTO
+            var scholarshipParticipants = dbContext.Scholarships.Where(i => i.Status == "won").Include("User").OrderByDescending(i=>i.Id).Take(10).Select(i => new ScholarshipParticipantDTO
             {
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
@@ -35,7 +35,7 @@ namespace NtoboaFund.SignalR
 
         public async Task GetCurrentBusinessWinners()
         {
-            var scholarshipParticipants = dbContext.Businesses.Where(i => i.Status == "won").Include("User").Select(i => new BusinessParticipantDTO
+            var scholarshipParticipants = dbContext.Businesses.Where(i => i.Status == "won").Include("User").OrderByDescending(i => i.Id).Take(10).Select(i => new BusinessParticipantDTO
             {
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
@@ -52,7 +52,7 @@ namespace NtoboaFund.SignalR
 
         public async Task GetCurrentMonthlyLuckymeWinners()
         {
-            var monthlyLuckymeWinners = dbContext.LuckyMes.Where(i => i.Status == "won" && i.Period.ToLower() == "monthly").Include("User").Select(i => new BusinessParticipantDTO
+            var monthlyLuckymeWinners = dbContext.LuckyMes.Where(i => i.Status == "won" && i.Period.ToLower() == "monthly").Include("User").OrderByDescending(i => i.Id).Take(10).Select(i => new BusinessParticipantDTO
             {
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
@@ -69,7 +69,7 @@ namespace NtoboaFund.SignalR
 
         public async Task GetCurrentWeeklyLuckymeWinners()
         {
-            var weeklyLuckymeWinners = dbContext.LuckyMes.Where(i => i.Status == "won" && i.Period.ToLower() == "weekly").Include("User").Select(i => new LuckyMeParticipantDTO
+            var weeklyLuckymeWinners = dbContext.LuckyMes.Where(i => i.Status == "won" && i.Period.ToLower() == "weekly").Include("User").OrderByDescending(i => i.Id).Take(10).Select(i => new LuckyMeParticipantDTO
             {
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
@@ -85,7 +85,7 @@ namespace NtoboaFund.SignalR
 
         public async Task GetCurrentDailyLuckymeWinners()
         {
-            var dailyLuckymeWinners = dbContext.LuckyMes.Where(i => i.Status == "won" && i.Period.ToLower() == "daily").Include("User").Select(i => new LuckyMeParticipantDTO
+            var dailyLuckymeWinners = dbContext.LuckyMes.Where(i => i.Status == "won" && i.Period.ToLower() == "daily").Include("User").OrderByDescending(i => i.Id).Take(10).Select(i => new LuckyMeParticipantDTO
             {
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,

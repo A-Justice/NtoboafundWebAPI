@@ -28,6 +28,8 @@ namespace NtoboaFund.Data.DBContext
 
         public DbSet<UserBuilder> UserBuilders { get; set; }
 
+        public DbSet<ContactUs> ContactUs { get; set; }
+
         public NtoboaFundDbContext(DbContextOptions<NtoboaFundDbContext> options)
             : base(options)
         {

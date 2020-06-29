@@ -50,7 +50,7 @@ namespace NtoboaFund
             //GearHost
             //DefaultConnection
             //Azure
-            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"), i => i.EnableRetryOnFailure()), ServiceLifetime.Transient);
+            services.AddDbContext<NtoboaFundDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Azure"), i => i.EnableRetryOnFailure()), ServiceLifetime.Transient);
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("Personal");

@@ -39,7 +39,7 @@ namespace NtoboaFund.Controllers
 
         public StakersHub DataHub { get; set; }
 
-        public TransactionController(IOptions<AppSettings> appSettings,
+        public  TransactionController(IOptions<AppSettings> appSettings,
             NtoboaFundDbContext _context, DummyService dummyService, StakersHub dataHub,
             IHubContext<StakersHub> stakersHub, MessagingService messagingService)
         {
@@ -111,6 +111,7 @@ namespace NtoboaFund.Controllers
                 }
 
             }
+          
             else if (paymentType == "SlydePay" && Constants.PaymentGateway == PaymentGateway.slydepay)
                 paymentToken = await Misc.GenerateAndSendSlydePayAnkasaInvoice(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings);
 
@@ -683,8 +684,6 @@ namespace NtoboaFund.Controllers
                 {
                     errorString = ex.Message;
                 }
-
-
 
                 //  return Ok(hubtelresponse?.data?.checkoutUrl);
                 return Ok(new { business.Status, errorString });

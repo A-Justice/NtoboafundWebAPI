@@ -258,12 +258,10 @@ namespace NtoboaFund.SignalR
         {
             await Clients.Caller.SendAsync("getPotentialScholarshipWinnersCount", GetCurrentPotentialWinnersCount(EntityTypes.Scholarship));
         }
-
         public async Task GetPotentialBusinessWinnersCount()
         {
             await Clients.Caller.SendAsync("getPotentialBusinessWinnersCount", GetCurrentPotentialWinnersCount(EntityTypes.Business));
         }
-
         public async Task GetPotentialDailyLuckymeWinnersCount()
         {
             await Clients.Caller.SendAsync("getPotentialDailyLuckymeWinnersCount", GetCurrentPotentialWinnersCount(EntityTypes.Luckyme, Period.Daily));
