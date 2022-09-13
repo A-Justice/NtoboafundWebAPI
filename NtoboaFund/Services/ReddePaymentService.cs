@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NtoboaFund.Data;
 using NtoboaFund.Data.DBContext;
@@ -27,82 +28,107 @@ namespace NtoboaFund.Services
             UserService = userService;
         }
 
-        public async Task PersistReddeUssdData(string requestString)
+        public async Task PersistUssdData(string requestString)
         {
 
             using (var scope = serviceFactory.CreateScope())
             {
-                dbContext = scope.ServiceProvider.GetRequiredService<NtoboaFundDbContext>();
-                //types : lkm,bus,sch
-                var match = Regex.Match(requestString, @"(?<type>\w+)-(?<amount>\d+)-(?<period>\w+)-(?<momonumber>\w+)-(?<voucher>[\w\s]+)-(?<mobilenumber>\w+)");
-                var type = match.Groups["type"].ToString();
-                var amount = Convert.ToDecimal(match.Groups["amount"].ToString());
-                var period = match.Groups["period"].ToString();
-                var momoNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["momonumber"].ToString());
-                var voucher = match.Groups["voucher"].ToString();
-                var mobileNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["mobilenumber"].ToString());
-                var user = await getMatchedUser(dbContext, mobileNumber);
-
-                var txRef = Misc.getTxRef(mobileNumber);
-                IStakeType stakeType = null;
-                EntityTypes entityType;
-
-
-
-                if (type == "lkm")
-                {
-                    entityType = EntityTypes.Luckyme;
-                    stakeType = new LuckyMe
-                    {
-                        Amount = amount,
-                        Date = DateTime.Now.ToLongDateString(),
-                        AmountToWin = amount * Constants.LuckymeStakeOdds,
-                        Status = "pending",
-                        TxRef = txRef,
-                        Period = period,
-                        User = user
-                    };
-
-                    dbContext.LuckyMes.Add(stakeType as LuckyMe);
-
-                }
-                else if (type == "bus")
-                {
-                    entityType = EntityTypes.Business;
-                    stakeType = new Business
-                    {
-                        Amount = amount,
-                        Date = DateTime.Now.ToLongDateString(),
-                        AmountToWin = amount * Constants.BusinessStakeOdds,
-                        Status = "pending",
-                        TxRef = txRef,
-                        Period = period,
-                        User = user
-                    };
-
-                    dbContext.Businesses.Add(stakeType as Business);
-
-                }
-
-
-                await dbContext.SaveChangesAsync();
-
                 try
                 {
-                    var transactionId = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Scholarship, stakeType, Settings.ReddeSettings, $"{Misc.FormatGhanaianPhoneNumberWp(momoNumber)}*{voucher}");
-                    if (type == "lkm")
+
+                    dbContext = scope.ServiceProvider.GetRequiredService<NtoboaFundDbContext>();
+                    //types : luckyme,business,scholarship
+                    var match = Regex.Match(requestString, @"(?<type>\w+)-(?<amount>\d+)-(?<period>\w+)-(?<momonumber>\w+)-(?<voucher>[\w\s]+)-(?<mobilenumber>\w+)");
+                    var type = match.Groups["type"].ToString();
+                    var amount = Convert.ToDecimal(match.Groups["amount"].ToString());
+                    var period = match.Groups["period"].ToString();
+                    var momoNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["momonumber"].ToString());
+                    var voucher = match.Groups["voucher"].ToString();
+                    var mobileNumber = "0" + Misc.NormalizePhoneNumber(match.Groups["mobilenumber"].ToString());
+
+
+                    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                    var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
+
+                    var _user = await getMatchedUser(dbContext, mobileNumber, userManager, roleManager, messagingService);
+
+                    //dbContext = scope.ServiceProvider.GetRequiredService<NtoboaFundDbContext>();
+
+                    var user = await dbContext.Users.FindAsync(_user.Id);
+
+                    var txRef = Misc.getTxRef(mobileNumber);
+                    IStakeType stakeType = null;
+                    EntityTypes entityType;
+
+
+
+                    if (type == "luckyme")
+                    {
+                        entityType = EntityTypes.Luckyme;
+                        stakeType = new LuckyMe
+                        {
+                            Amount = amount,
+                            Date = DateTime.Now.ToLongDateString(),
+                            AmountToWin = amount * Constants.LuckymeStakeOdds,
+                            Status = "pending",
+                            TxRef = txRef,
+                            Period = period,
+                            User = user
+                        };
+
+                        dbContext.LuckyMes.Add(stakeType as LuckyMe);
+
+                    }
+                    else if (type == "business")
+                    {
+                        entityType = EntityTypes.Business;
+                        stakeType = new Business
+                        {
+                            Amount = amount,
+                            Date = DateTime.Now.ToLongDateString(),
+                            AmountToWin = amount * Constants.BusinessStakeOdds,
+                            Status = "pending",
+                            TxRef = txRef,
+                            Period = period,
+                            User = user
+                        };
+
+                        dbContext.Businesses.Add(stakeType as Business);
+
+                    }
+
+
+
+
+                    await dbContext.SaveChangesAsync();
+
+                    int? transactionId = null;
+                    if (Constants.PaymentGateway == PaymentGateway.redde)
+                        transactionId  = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Scholarship, stakeType, Settings.ReddeSettings, $"{Misc.FormatGhanaianPhoneNumberWp(momoNumber)}*{voucher}");
+                    if (type == "luckyme")
                     {
                         var luckyMe = stakeType as LuckyMe;
                         luckyMe.TransferId = transactionId;
                         dbContext.Entry(luckyMe).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
                         await dbContext.SaveChangesAsync();
+                        if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                        {
+                            await Misc.GenerateAndSendTellerInvoice(luckyMe, Settings.TellerSettings, $"{Misc.FormatGhanaianPhoneNumberWp(momoNumber)}*{voucher}", "Payment for luckyme", EntityTypes.Luckyme);
+                            await Misc.PostRequest<dynamic>($"{Constants.BackUrl}/transaction/verifyLuckymePayment/{luckyMe.TxRef}?paymentType=MobileMoney", new { });
+                        }   
                     }
-                    else if (type == "bus")
+                    else if (type == "business")
                     {
                         var business = stakeType as Business;
                         business.TransferId = transactionId;
                         dbContext.Entry(business).State = Microsoft.EntityFrameworkCore.EntityState.Modified;
                         await dbContext.SaveChangesAsync();
+                        if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                        {
+                            await Misc.GenerateAndSendTellerInvoice(business, Settings.TellerSettings, $"{Misc.FormatGhanaianPhoneNumberWp(momoNumber)}*{voucher}", "Payment for Business", EntityTypes.Business);
+                            await Misc.PostRequest<dynamic>($"{Constants.BackUrl}transaction/verifyBusinessPayment/{business.TxRef}?paymentType=MobileMoney", new { });
+                        }
                     }
 
                 }
@@ -115,13 +141,13 @@ namespace NtoboaFund.Services
 
         }
 
-        public async Task PersistScholarshipReddeUssdData(string requestString)
+        public async Task PersistScholarshipUssdData(string requestString)
         {
             using (var scope = serviceFactory.CreateScope())
             {
                 dbContext = scope.ServiceProvider.GetRequiredService<NtoboaFundDbContext>();
 
-                //types : lkm,bus,sch
+                //types : luckyme,business,scholarship
                 var regex = new Regex(@"^(?<type>\w+)\*(?<amount>\d+)-(?<period>\w+)-(?<institution>[\w\s]+)-(?<program>[\w\s]+)-(?<studentid>[\w\s]+)-(?<playertype>\d+)-(?<momonumber>\d+)-(?<voucher>[\w\s]+)-(?<usernumber>\d+)$").Match(requestString);
                 var type = regex.Groups["type"].ToString();
                 var amount = regex.Groups["amount"].ToString();
@@ -134,8 +160,11 @@ namespace NtoboaFund.Services
                 var mobileNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["usernumber"].ToString());
                 var momoNumber = "0" + Misc.NormalizePhoneNumber(regex.Groups["momonumber"].ToString());
 
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
 
-                var user = await getMatchedUser(dbContext, mobileNumber);
+                var user = await getMatchedUser(dbContext, mobileNumber, userManager,roleManager,messagingService);
                 var txRef = Misc.getTxRef(mobileNumber);
 
                 var scholarship = new Scholarship
@@ -158,10 +187,18 @@ namespace NtoboaFund.Services
 
                 try
                 {
-                    var transactionId = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Scholarship, scholarship, Settings.ReddeSettings, $"{Misc.FormatGhanaianPhoneNumberWp(momoNumber)}*{voucher}");
+                    int? transactionId = null;
+                    if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                        transactionId = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Scholarship, scholarship, Settings.ReddeSettings, $"{Misc.FormatGhanaianPhoneNumberWp(momoNumber)}*{voucher}");
                     scholarship.TransferId = transactionId;
                     dbContext.Scholarships.Add(scholarship);
                     await dbContext.SaveChangesAsync();
+                    if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                    {
+                        await Misc.GenerateAndSendTellerInvoice(scholarship, Settings.TellerSettings, $"{Misc.FormatGhanaianPhoneNumberWp(momoNumber)}*{voucher}", "Payment for Business", EntityTypes.Scholarship);
+                        await Misc.PostRequest<dynamic>($"{Constants.BackUrl}/transaction/verifyScholarshipPayment/{scholarship.TxRef}?paymentType=MobileMoney", new { });
+                    }
+
                 }
                 catch (Exception ex)
                 {
@@ -172,12 +209,11 @@ namespace NtoboaFund.Services
 
         }
 
-
-        async Task<ApplicationUser> getMatchedUser(NtoboaFundDbContext localContext, string phoneNumber)
+        async Task<ApplicationUser> getMatchedUser(NtoboaFundDbContext localContext, string phoneNumber, UserManager<ApplicationUser> _userManager = null, RoleManager<IdentityRole> _roleManager = null, MessagingService _messagingService = null)
         {
-            phoneNumber = "0" + Misc.NormalizePhoneNumber(phoneNumber);
+            var nomalizedPhoneNumber = Misc.NormalizePhoneNumber(phoneNumber);
 
-            var user = localContext.Users.FirstOrDefault(i => Misc.NormalizePhoneNumber(i.PhoneNumber) == Misc.NormalizePhoneNumber(phoneNumber));
+            var user = localContext.Users.FirstOrDefault(i => i.PhoneNumber.Contains(nomalizedPhoneNumber));
 
             if (user != null)
                 return user;
@@ -191,7 +227,8 @@ namespace NtoboaFund.Services
                 Password = phoneNumber,
                 ConfirmPassword = phoneNumber
             };
-            var result = await UserService.Register(regDTO, true);
+
+            var result = await UserService.Register(regDTO, true, localContext,_userManager,_roleManager,_messagingService);
             //dbContext.Users.Add(user);
             //await dbContext.SaveChangesAsync();
 

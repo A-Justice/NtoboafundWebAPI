@@ -63,13 +63,14 @@ namespace NtoboaFund.Controllers
         public async Task<IActionResult> PayForLuckyMe(string txRef, string paymentType, string momoStarVoucherOrEmail, bool isredirected = false)
         {
             var luckyMe = dbContext.LuckyMes.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+            var description = "Luckyme Contribution";
             if (luckyMe == null)
             {
                 return BadRequest(new { message = "This Lucky Me Transaction Was Not Found" });
             }
             string paymentToken = null;
-
-            if (paymentType == "MobileMoney" && momoStarVoucherOrEmail != null)
+            string checkoutUrl = null;
+            if (paymentType == "MobileMoney" || paymentType == "wallet" && momoStarVoucherOrEmail != null)
             {
                 if (Constants.PaymentGateway == PaymentGateway.slydepay)
                 {
@@ -81,8 +82,18 @@ namespace NtoboaFund.Controllers
                     paymentToken = payResults.ToString();
                     luckyMe.TransferId = payResults;
                 }
-
-
+                else if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                {
+                    var payResult = 0;
+                    if (luckyMe.User.Wallet > luckyMe.Amount && paymentType == "wallet")
+                    {
+                        luckyMe.User.Wallet -= luckyMe.Amount;
+                        luckyMe.Status = "paid";
+                    }else
+                        payResult = await Misc.GenerateAndSendTellerInvoice(luckyMe, AppSettings.TellerSettings, momoStarVoucherOrEmail, description,EntityTypes.Luckyme);
+                    //paymentToken = payResult.token;
+                    //checkoutUrl = payResult.checkoutUrl;
+                }
             }
             else if (paymentType == "CreditCard")
             {
@@ -109,6 +120,12 @@ namespace NtoboaFund.Controllers
                     }
 
                 }
+                else if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                {
+                    var payResult = await Misc.GenerateTellerToken(luckyMe, luckyMe.User, AppSettings.TellerSettings, description, EntityTypes.Luckyme);
+                    paymentToken = payResult.token;
+                    checkoutUrl = payResult.checkoutUrl;
+                }
 
             }
           
@@ -116,30 +133,32 @@ namespace NtoboaFund.Controllers
                 paymentToken = await Misc.GenerateAndSendSlydePayAnkasaInvoice(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings);
 
 
-
-
-            if (paymentToken == null)
+            if (paymentToken == null && paymentType == "CreditCard")
                 return BadRequest(new { message = "Payment Failed" });
             //else
             //    await Misc.ConfirmSlydePayTransaction(EntityTypes.Luckyme, luckyMe, AppSettings.SlydePaySettings);
 
             dbContext.Entry(luckyMe).State = EntityState.Modified;
+
+            dbContext.Entry(luckyMe.User).State = EntityState.Modified;
+
             await dbContext.SaveChangesAsync();
 
-            return Ok(new { txRef, paymentToken });
+            return Ok(new { txRef, paymentToken ,checkoutUrl});
         }
 
         [HttpPost("payforbusiness/{txRef}/{paymentType}/{momoStarVoucherOrEmail}/{isredirected}")]
         public async Task<IActionResult> PayForBusiness(string txRef, string paymentType, string momoStarVoucherOrEmail, bool isredirected = false)
         {
             var business = dbContext.Businesses.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+            var description = "Business Contribution";
             if (business == null)
             {
                 return BadRequest(new { message = "This Business Me Transaction Was Not Found" });
             }
             string paymentToken = null;
-
-            if (paymentType == "MobileMoney" && momoStarVoucherOrEmail != null)
+            string checkoutUrl = null;
+            if (paymentType == "MobileMoney" || paymentType == "wallet" && momoStarVoucherOrEmail != null)
             {
                 if (Constants.PaymentGateway == PaymentGateway.slydepay)
                     paymentToken = await Misc.GenerateAndSendSlydePayMomoInvoice(EntityTypes.Business, business, AppSettings.SlydePaySettings, momoStarVoucherOrEmail);
@@ -148,6 +167,18 @@ namespace NtoboaFund.Controllers
                     var payResult = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Business, business, AppSettings.ReddeSettings, momoStarVoucherOrEmail);
                     paymentToken = paymentToken.ToString();
                     business.TransferId = payResult;
+                }
+                else if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                {
+                    var payResult = 0;
+                    if (business.User.Wallet > business.Amount && paymentType == "wallet")
+                    {
+                        business.User.Wallet -= business.Amount;
+                        business.Status = "paid";
+                    }else
+                     payResult = await Misc.GenerateAndSendTellerInvoice(business, AppSettings.TellerSettings, momoStarVoucherOrEmail, description, EntityTypes.Business);
+                    //paymentToken = payResult.token;
+                    //checkoutUrl = payResult.checkoutUrl;
                 }
 
             }
@@ -172,33 +203,42 @@ namespace NtoboaFund.Controllers
                         business.TransferId = payResult.checkoutransId;
                     }
                 }
+                else if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                {
+                    var payResult = await Misc.GenerateTellerToken(business, business.User, AppSettings.TellerSettings, momoStarVoucherOrEmail, EntityTypes.Business);
+                    paymentToken = payResult.token;
+                    checkoutUrl = payResult.checkoutUrl;
+                }
 
             }
             else if (paymentType == "SlydePay" && Constants.PaymentGateway == PaymentGateway.slydepay)
                 paymentToken = await Misc.GenerateAndSendSlydePayAnkasaInvoice(EntityTypes.Business, business, AppSettings.SlydePaySettings);
 
-            if (paymentToken == null)
+            if (paymentToken == null && paymentType == "CreditCard")
                 return BadRequest(new { message = "Payment Failed" });
             //else
             //    await Misc.ConfirmSlydePayTransaction(EntityTypes.Business, business, AppSettings.SlydePaySettings);
             dbContext.Entry(business).State = EntityState.Modified;
+            dbContext.Entry(business.User).State = EntityState.Modified;
+
             await dbContext.SaveChangesAsync();
 
 
-            return Ok(new { txRef, paymentToken });
+            return Ok(new { txRef, paymentToken,checkoutUrl });
         }
 
         [HttpPost("payforscholarship/{txRef}/{paymentType}/{momoStarVoucherOrEmail}/{isredirected}")]
         public async Task<IActionResult> PayForScholarship(string txRef, string paymentType, string momoStarVoucherOrEmail, bool isredirected = false)
         {
             var scholarship = dbContext.Scholarships.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+            var description = "Scholarship Contribution";
             if (scholarship == null)
             {
                 return BadRequest(new { message = "This Scholarship Transaction Was Not Found" });
             }
             string paymentToken = null;
-
-            if (paymentType == "MobileMoney" && momoStarVoucherOrEmail != null)
+            string checkoutUrl = null;
+            if (paymentType == "MobileMoney" || paymentType == "wallet" && momoStarVoucherOrEmail != null)
             {
                 if (Constants.PaymentGateway == PaymentGateway.slydepay)
                     paymentToken = await Misc.GenerateAndSendSlydePayMomoInvoice(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings, momoStarVoucherOrEmail);
@@ -207,6 +247,18 @@ namespace NtoboaFund.Controllers
                     var payResult = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.Scholarship, scholarship, AppSettings.ReddeSettings, momoStarVoucherOrEmail);
                     paymentToken = paymentToken.ToString();
                     scholarship.TransferId = payResult;
+                }
+                else if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                {
+                    var payResult = 0;
+                    if (scholarship.User.Wallet > scholarship.Amount && paymentType == "wallet")
+                    {
+                        scholarship.User.Wallet -= scholarship.Amount;
+                        scholarship.Status = "paid";
+                    }else
+                    payResult = await Misc.GenerateAndSendTellerInvoice(scholarship, AppSettings.TellerSettings, momoStarVoucherOrEmail, description, EntityTypes.Scholarship);
+                    //paymentToken = payResult.token;
+                    //checkoutUrl = payResult.checkoutUrl;
                 }
 
             }
@@ -232,19 +284,113 @@ namespace NtoboaFund.Controllers
                     }
 
                 }
+                else if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                {
+                    var payResult = await Misc.GenerateTellerToken(scholarship, scholarship.User, AppSettings.TellerSettings, description, EntityTypes.Scholarship);
+                    paymentToken = payResult.token;
+                    checkoutUrl = payResult.checkoutUrl;
+                }
             }
             else if (paymentType == "SlydePay" && Constants.PaymentGateway == PaymentGateway.slydepay)
                 paymentToken = await Misc.GenerateAndSendSlydePayAnkasaInvoice(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings);
 
-            if (paymentToken == null)
+            if (paymentToken == null && paymentType == "CreditCard")
                 return BadRequest(new { message = "Payment Failed" });
             //else
             //    await Misc.ConfirmSlydePayTransaction(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings);
 
             dbContext.Entry(scholarship).State = EntityState.Modified;
+            dbContext.Entry(scholarship.User).State = EntityState.Modified;
+
             await dbContext.SaveChangesAsync();
 
-            return Ok(new { txRef, paymentToken });
+            return Ok(new { txRef, paymentToken, checkoutUrl });
+        }
+
+
+        [HttpPost("payforcrowdfund/{txRef}/{paymentType}/{momoStarVoucherOrEmail}/{isredirected}")]
+        public async Task<IActionResult> PayForCrowdfund(string txRef, string paymentType, string momoStarVoucherOrEmail, bool isredirected = false)
+        {
+            try
+            {
+                var donation = dbContext.Donations.Where(i => i.TxRef == txRef).FirstOrDefault();
+                var description = "Crowdfund Contribution";
+                if (donation == null)
+                {
+                    return BadRequest(new { message = "This Donation Transaction Was Not Found" });
+                }
+                var donationUser = dbContext.Users.Where(i => i.Id == donation.UserId).FirstOrDefault();
+                if (donationUser == null)
+                {
+                    return BadRequest(new { message = "This Donation User Was Not Found" });
+                }
+                string paymentToken = null;
+                string checkoutUrl = null;
+                if (paymentType == "MobileMoney" && momoStarVoucherOrEmail != null)
+                {
+                    if (Constants.PaymentGateway == PaymentGateway.slydepay)
+                        paymentToken = await Misc.GenerateAndSendSlydePayMomoInvoice(EntityTypes.CrowdFund, donation, AppSettings.SlydePaySettings, momoStarVoucherOrEmail);
+                    else if (Constants.PaymentGateway == PaymentGateway.redde)
+                    {
+                        var payResult = await Misc.GenerateAndSendReddeMomoInvoice(EntityTypes.CrowdFund, donation, AppSettings.ReddeSettings, momoStarVoucherOrEmail);
+                        paymentToken = payResult.ToString();
+                    }
+                    else if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                    {
+                        var payResult = await Misc.GenerateAndSendTellerInvoice(donation, AppSettings.TellerSettings, momoStarVoucherOrEmail, description, EntityTypes.CrowdFund);
+                        //paymentToken = payResult.token;
+                        //checkoutUrl = payResult.checkoutUrl;
+                    }
+
+                }
+                else if (paymentType == "CreditCard")
+                {
+                    if (Constants.PaymentGateway == PaymentGateway.slydepay)
+                    {
+                        if (!isredirected)
+                            paymentToken = await Misc.GenerateAndSendSlydePayCardInvoice(EntityTypes.CrowdFund, donation, AppSettings.SlydePaySettings, momoStarVoucherOrEmail);
+                        else
+                            paymentToken = await Misc.GenerateSlydePayToken(EntityTypes.CrowdFund, donation, AppSettings.SlydePaySettings);
+
+                    }
+                    else if (Constants.PaymentGateway == PaymentGateway.redde)
+                    {
+                        if (!isredirected) { }
+                        //paymentToken = await Misc.GenerateAndSendSlydePayCardInvoice(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings, momoStarVoucherOrEmail);
+                        else
+                        {
+                            var payResult = await Misc.GenerateReddeToken(EntityTypes.CrowdFund, donation, AppSettings.ReddeSettings);
+                            paymentToken = payResult.token;
+                            //donation.TxRef = payResult.checkoutransId;
+                        }
+
+                    }
+                    else if (Constants.PaymentGateway == PaymentGateway.theTeller)
+                    {
+                        var payResult = await Misc.GenerateTellerToken(donation, donationUser, AppSettings.TellerSettings, description, EntityTypes.CrowdFund);
+                        paymentToken = payResult.token;
+                        checkoutUrl = payResult.checkoutUrl;
+                    }
+                }
+                else if (paymentType == "SlydePay" && Constants.PaymentGateway == PaymentGateway.slydepay)
+                    paymentToken = await Misc.GenerateAndSendSlydePayAnkasaInvoice(EntityTypes.Scholarship, donation, AppSettings.SlydePaySettings);
+
+                if (paymentToken == null && paymentType == "CreditCard")
+                    return BadRequest(new { message = "Payment Failed" });
+                //else
+                //    await Misc.ConfirmSlydePayTransaction(EntityTypes.Scholarship, scholarship, AppSettings.SlydePaySettings);
+
+                dbContext.Entry(donation).State = EntityState.Modified;
+                await dbContext.SaveChangesAsync();
+
+                return Ok(new { txRef, paymentToken,checkoutUrl });
+
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(new { message = "Payment Failed" });
+            }
+           
         }
 
 
@@ -277,8 +423,17 @@ namespace NtoboaFund.Controllers
 
                 try
                 {
-                    var VResult = VerifyPayment(luckyMe.TransferId, paymentType, status).Result;
-                    if (VResult.isConfirmed)
+                    (string message, bool? isConfirmed) VResult;
+                    if (luckyMe.Status == "paid")
+                    {
+                        VResult = ("", true);
+                    }
+                    else
+                    {
+                        VResult = VerifyPayment(Misc.getTransactionId(luckyMe.Id, EntityTypes.Luckyme), paymentType, status).Result;
+                    }
+                     
+                    if (VResult.isConfirmed == true)
                     {
                         if (luckyMe.Status.ToLower() == "paid")
                             return Ok(new { luckyMe, errorString });
@@ -295,6 +450,10 @@ namespace NtoboaFund.Controllers
 
                         });
                         }
+
+                        dbContext.Entry(luckyMeUser).State = EntityState.Modified;
+                        dbContext.Entry(luckyMe).State = EntityState.Modified;
+                        dbContext.SaveChanges();
                     }
                     else
                     {
@@ -305,9 +464,7 @@ namespace NtoboaFund.Controllers
                         else
                             luckyMe.Status = "failed";
                     }
-                    dbContext.Entry(luckyMeUser).State = EntityState.Modified;
-                    dbContext.Entry(luckyMe).State = EntityState.Modified;
-                    dbContext.SaveChanges();
+                    
 
                     if (luckyMeUser != null && luckyMe.Status.ToLower() == "paid") //send the currently added participant to all clients
                     {
@@ -432,14 +589,14 @@ namespace NtoboaFund.Controllers
 
                     }
 
-
+                    return Ok(new { Status = getStatus(VResult.isConfirmed), errorString });
                 }
                 catch (Exception ex)
                 {
                     errorString = ex.Message;
+                    return BadRequest(new { message = errorString });
                 }
 
-                return Ok(new { luckyMe.Status, errorString });
 
             }
         }
@@ -475,8 +632,15 @@ namespace NtoboaFund.Controllers
 
                 try
                 {
-                    var VResult = VerifyPayment(scholarship.TransferId, paymentType, status).Result;
-                    if (VResult.isConfirmed)
+                    (string message, bool? isConfirmed) VResult;
+                    if (scholarship.Status == "paid")
+                    {
+                        VResult = ("", true);
+                    }
+                    else
+                     VResult = VerifyPayment(Misc.getTransactionId(scholarship.Id,EntityTypes.Scholarship), paymentType, status).Result;
+
+                    if (VResult.isConfirmed == true)
                     {
                         if (scholarship.Status.ToLower() == "paid")
                             return Ok(new { scholarship.Status, errorString });
@@ -492,6 +656,10 @@ namespace NtoboaFund.Controllers
 
                             });
                         }
+
+                        dbContext.Entry(scholarshipUser).State = EntityState.Modified;
+                        dbContext.Entry(scholarship).State = EntityState.Modified;
+                        dbContext.SaveChanges();
                     }
                     else
                     {
@@ -502,9 +670,7 @@ namespace NtoboaFund.Controllers
                         else
                             scholarship.Status = "failed";
                     }
-                    dbContext.Entry(scholarshipUser).State = EntityState.Modified;
-                    dbContext.Entry(scholarship).State = EntityState.Modified;
-                    dbContext.SaveChanges();
+                   
                     //Find the current user associated with the scholarship
 
 
@@ -554,16 +720,14 @@ namespace NtoboaFund.Controllers
                         errorString = "Payment Could not be verfied";
                     }
 
+                    return Ok(new { Status = getStatus(VResult.isConfirmed), errorString });
                 }
                 catch (Exception ex)
                 {
                     errorString = ex.Message;
+                    return BadRequest(new { message = errorString });
                 }
 
-
-
-                //  return Ok(hubtelresponse?.data?.checkoutUrl);
-                return Ok(new { scholarship.Status, errorString });
             }
         }
 
@@ -598,8 +762,15 @@ namespace NtoboaFund.Controllers
 
                 try
                 {
-                    var VResult = VerifyPayment(business.TransferId, paymentType, status).Result;
-                    if (VResult.isConfirmed)
+                    (string message, bool? isConfirmed) VResult;
+                    if (business.Status == "paid")
+                    {
+                        VResult = ("", true);
+                    }
+                    else
+                      VResult = VerifyPayment(Misc.getTransactionId(business.Id, EntityTypes.Business), paymentType, status).Result;
+
+                    if (VResult.isConfirmed == true)
                     {
                         if (business.Status.ToLower() == "paid")
                             return Ok(new { business.Status, errorString });
@@ -616,6 +787,10 @@ namespace NtoboaFund.Controllers
                             });
                         }
 
+                        dbContext.Entry(businessUser).State = EntityState.Modified;
+                        dbContext.Entry(business).State = EntityState.Modified;
+                        dbContext.SaveChanges();
+
                     }
                     else
                     {
@@ -628,9 +803,7 @@ namespace NtoboaFund.Controllers
                     }
 
 
-                    dbContext.Entry(businessUser).State = EntityState.Modified;
-                    dbContext.Entry(business).State = EntityState.Modified;
-                    dbContext.SaveChanges();
+                    
                     //Find the current user associated with the business
 
                     if (businessUser != null && business.Status.ToLower() == "paid") //send the currently added participant to all clients
@@ -677,16 +850,108 @@ namespace NtoboaFund.Controllers
                     {
                         errorString = "Payment Could not be verfied";
                     }
-
+                    return Ok(new { Status = getStatus(VResult.isConfirmed), errorString });
                     //resultString = GenerateHubtelUrl(business.Id, business.Amount, "business");
                 }
                 catch (Exception ex)
                 {
                     errorString = ex.Message;
+                    return BadRequest(new { message = errorString });
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Verifies a payment transaction
+        /// </summary>
+        /// <param name="txRef">The Unique reference of the transaction</param>
+        /// <param name="paymentType">The type of payment momo or card</param>
+        /// <param name="status">An already known status of the transaction</param>
+        /// <returns>An Http Status Code</returns>
+        [HttpPost("verifyCrowfundPayment/{txRef}")]
+        public async Task<IActionResult> VerifyCrowdFundPayment(string txRef, string paymentType = null, string status = null/*, [FromBody]Business business*/)
+        {
+            lock (locker)
+            {
+                var donation = dbContext.Donations.Where(i => i.TxRef == txRef).FirstOrDefault();
+               
+                ApplicationUser donationUser = null;
+                if (donation == null)
+                {
+                    return BadRequest(new { status = "", errorString = "Donation was not found" });
+                }
+                else if (donation.paid)
+                {
+                    return Ok(new { Status = donation.paid, message = "Donation Already Verified" });
+                }
+                var crowdFund = dbContext.CrowdFunds.Where(i => i.Id == donation.CrowdFundId).FirstOrDefault();
+                donationUser = dbContext.Users.Find(donation.UserId);
+
+
+                // string resultString = null;
+                string errorString = null;
+
+                try
+                {
+                    var VResult = VerifyPayment(Misc.getTransactionId(donation.Id,EntityTypes.CrowdFund), paymentType, status).Result;
+                    if (VResult.isConfirmed == true)
+                    {
+                        //if (donation.paid == true)
+                        //    return Ok(new { Status = getStatus(VResult.isConfirmed), errorString });
+
+                        donation.paid = true;
+
+                        crowdFund.TotalAmountRecieved += donation.Amount;
+
+                        dbContext.Entry(donationUser).State = EntityState.Modified;
+                        dbContext.Entry(donation).State = EntityState.Modified;
+                        dbContext.Entry(crowdFund).State = EntityState.Modified;
+                        dbContext.SaveChanges();
+
+                    }
+                    else
+                    {
+                        if (VResult.message == "PENDING" || VResult.message == "PROGRESS" || VResult.message == "NEW")
+                        {
+
+                        }
+                        else
+                            donation.paid = false;
+                    }
+
+
+                  
+                    //Find the current user associated with the business
+
+                    if (donationUser != null && donation.paid == true) //send the currently added participant to all clients
+                    {
+                        //Send an Email to the User
+
+                        var drawMessage = $"You have successfully donated an amount of {donation.Amount} cedis to {donationUser.FirstName} {donationUser.LastName}'s Crowdfund {crowdFund.Title}";
+
+                        MessagingService.SendMail(donationUser.FirstName + donationUser.LastName, donationUser.Email, "Successful CrowdFund Donation",drawMessage);
+
+                        //Send as sms to the user
+                        MessagingService.SendSms(donationUser.PhoneNumber, drawMessage);
+
+                    }
+                    else if (!donation.paid)
+                    {
+                        errorString = "Payment Could not be verfied";
+                    }
+
+                    //resultString = GenerateHubtelUrl(business.Id, business.Amount, "business");
+                    return Ok(new { Status = getStatus(VResult.isConfirmed), errorString });
+                }
+                catch (Exception ex)
+                {
+                    errorString = ex.Message;
+                    return BadRequest(new { message =  errorString });
                 }
 
                 //  return Ok(hubtelresponse?.data?.checkoutUrl);
-                return Ok(new { business.Status, errorString });
+              
             }
         }
 
@@ -772,6 +1037,34 @@ namespace NtoboaFund.Controllers
 
         }
 
+        [HttpPost("cancelcrowdfundtransaction/{txRef}")]
+        public async Task<IActionResult> CancelCrowdfundTransaction(string txRef)
+        {
+            var donation = dbContext.Donations.Where(i => i.TxRef == txRef).Include("User").FirstOrDefault();
+
+            if (donation == null)
+            {
+                return BadRequest("Scholarship not Found");
+            }
+            if (donation.paid)
+            {
+                donation.paid = false;
+                return Ok("CANCELLED");
+            }
+            else
+            {
+                var result = await Misc.CancelSlydePayTransaction(EntityTypes.Scholarship, donation, AppSettings.SlydePaySettings);
+
+                if (result.Result == "CANCELLED")
+                    return Ok(result.Result);
+                else
+                    return BadRequest(result.ErrorCode);
+            }
+
+
+        }
+
+
         [HttpPost("addpayment")]
         public async Task<IActionResult> AddPayment([FromBody]Payment payment)
         {
@@ -780,6 +1073,8 @@ namespace NtoboaFund.Controllers
             await dbContext.SaveChangesAsync();
             return Ok("Payment Made Successfully");
         }
+
+
 
         [HttpPost("ravehook")]
         public async Task<IActionResult> RaveWebHook(RaveWebhookCallback response)
@@ -865,20 +1160,25 @@ namespace NtoboaFund.Controllers
         {
             (string message, bool isConfirmed)? result = null;
 
-            if (record.StakeTypeShortName == "lkm")
+            if (record.StakeTypeShortName == "luckyme")
             {
                 //Passing MobileMoney as payment type to indicate the use of the rest api status check endpoint
-                result = await VerifyReddeCashoutRecord(EntityTypes.Luckyme, "MobileMoney", record);
+                result = await VerifyCashoutRecord(EntityTypes.Luckyme, "MobileMoney", record);
             }
-            else if (record.StakeTypeShortName == "bus")
+            else if (record.StakeTypeShortName == "business")
             {
                 //Passing MobileMoney as payment type to indicate the use of the rest api status check endpoint
-                result = await VerifyReddeCashoutRecord(EntityTypes.Business, "MobileMoney", record);
+                result = await VerifyCashoutRecord(EntityTypes.Business, "MobileMoney", record);
             }
-            else if (record.StakeTypeShortName == "sch")
+            else if (record.StakeTypeShortName == "scholarship")
             {
                 //Passing MobileMoney as payment type to indicate the use of the rest api status check endpoint
-                result = await VerifyReddeCashoutRecord(EntityTypes.Scholarship, "MobileMoney", record);
+                result = await VerifyCashoutRecord(EntityTypes.Scholarship, "MobileMoney", record);
+            }
+            else if (record.StakeTypeShortName == "crd")
+            {
+                //Passing MobileMoney as payment type to indicate the use of the rest api status check endpoint
+                result = await VerifyCashoutRecord(EntityTypes.CrowdFund, "MobileMoney", record);
             }
             if (result.Value.isConfirmed)
                 return Ok(new { result.Value.message });
@@ -907,7 +1207,7 @@ namespace NtoboaFund.Controllers
         }
 
 
-        async Task<(string message, bool isConfirmed)> VerifyPayment(int? paymentId, string paymentType, string status = null)
+        async Task<(string message, bool? isConfirmed)> VerifyPayment(string paymentId, string paymentType, string status = null)
         {
             if (Constants.PaymentGateway == PaymentGateway.flutterwave)
             {
@@ -1025,9 +1325,70 @@ namespace NtoboaFund.Controllers
 
                 }
             }
+            else if (Constants.PaymentGateway == PaymentGateway.theTeller)
+            {
+                if (status?.ToLower() == "paid")
+                    return ("PAID", true);
+                else if (status != null)
+                    return (status, false);
+                else
+                {
+
+
+                    var httpClient = new HttpClient();
+
+                    httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
+                    httpClient.DefaultRequestHeaders.Add("Merchant-Id", AppSettings.TellerSettings.MerchantId);
+                    //httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+
+
+                    string requestUrl = null;
+
+                    requestUrl = $"https://prod.theteller.net/v1.1/users/transactions/" + paymentId + "/status";
+
+
+                    var req = new HttpRequestMessage();
+                    req.Content = new StringContent("{}",
+                                    Encoding.UTF8,
+                                    "application/json");
+                    //req.Content.Headers.ContentType = new MediaTypeWithQualityHeaderValue("application/json");
+                    req.Method = HttpMethod.Get;
+                    req.RequestUri = new Uri(requestUrl);
+
+
+
+                    var responseMessage = httpClient.SendAsync(req).Result;
+
+                    var contentString = responseMessage.Content.ReadAsStringAsync().Result;
+
+                    try
+                    {
+                        TellerCheckoutResponse response = JsonConvert.DeserializeObject<TellerCheckoutResponse>(contentString);
+
+                        if (response.Code == 000)
+                            return ("PAID", true);
+                        else if (response.Code == 111 || response.Code == 107 || response.Code == 600)
+                        {
+                            return (null, null);
+                        }
+                        else
+                        {
+                            return (response.Code.ToString(), false);
+                        }
+                       
+                    }
+                    catch
+                    {
+                        return (null, false);
+                    }
+
+                }
+            }
             else return ("UNKNOWN", false);
         }
-        async Task<(string message, bool isConfirmed)> VerifyReddeCashout(EntityTypes entityType, string paymentType, ReddeCashoutWebhookCallback response = null)
+
+        async Task<(string message, bool? isConfirmed)> VerifyReddeCashout(EntityTypes entityType, string paymentType, ReddeCashoutWebhookCallback response = null)
         {
             IStakeType stakeType = null;
 
@@ -1046,7 +1407,7 @@ namespace NtoboaFund.Controllers
                     break;
             }
 
-            var result = await VerifyPayment(response.Transactionid, paymentType, response.Status);
+            var result = await VerifyPayment(response.Transactionid.ToString(), paymentType, response.Status);
 
             var payment = await dbContext.Payments.Where(i => i.TransactionId == response.Transactionid).FirstOrDefaultAsync();
 
@@ -1072,7 +1433,7 @@ namespace NtoboaFund.Controllers
             return result;
         }
 
-        async Task<(string message, bool isConfirmed)> VerifyReddeCashoutRecord(EntityTypes entityType, string paymentType, ReddeCashoutRecord record)
+        async Task<(string message, bool isConfirmed)> VerifyCashoutRecord(EntityTypes entityType, string paymentType, ReddeCashoutRecord record)
         {
 
             try
@@ -1082,13 +1443,13 @@ namespace NtoboaFund.Controllers
                 switch (entityType)
                 {
                     case EntityTypes.Luckyme:
-                        stakeType = dbContext.LuckyMes.Where(i => i.TransferId == record.TransferId && i.User.UserType == 0 && i.Status == "won").Include("User").FirstOrDefault();
+                        stakeType = dbContext.LuckyMes.Where(i => i.TxRef == record.TransferId && i.User.UserType == 0 && i.Status == "won").Include("User").FirstOrDefault();
                         break;
                     case EntityTypes.Business:
-                        stakeType = dbContext.Businesses.Where(i => i.TransferId == record.TransferId && i.User.UserType == 0 && i.Status == "won").Include("User").FirstOrDefault();
+                        stakeType = dbContext.Businesses.Where(i => i.TxRef == record.TransferId && i.User.UserType == 0 && i.Status == "won").Include("User").FirstOrDefault();
                         break;
                     case EntityTypes.Scholarship:
-                        stakeType = dbContext.Scholarships.Where(i => i.TransferId == record.TransferId && i.User.UserType == 0 && i.Status == "won").Include("User").FirstOrDefault();
+                        stakeType = dbContext.Scholarships.Where(i => i.TxRef == record.TransferId && i.User.UserType == 0 && i.Status == "won").Include("User").FirstOrDefault();
                         break;
                     default:
                         break;
@@ -1102,16 +1463,16 @@ namespace NtoboaFund.Controllers
 
 
 
-                var result = await VerifyPayment((int)record.TransactionId, paymentType);
+                //var result = await VerifyPayment(record.TransferId.ToString(), paymentType);
 
                 var payment = await dbContext.Payments.Where(i => i.TransactionId == record.TransactionId).FirstOrDefaultAsync();
 
-                if (!result.isConfirmed)
-                {
-                    //It means there is not existing payment for this transaction 
-                    //So don't worry urself to create a new payment.
-                    return ("Payment Verification Failed", result.isConfirmed);
-                }
+                //if (!result.isConfirmed == true)
+                //{
+                //    //It means there is not existing payment for this transaction 
+                //    //So don't worry urself to create a new payment.
+                //    return ("Payment Verification Failed", (bool)result.isConfirmed);
+                //}
 
                 if (payment == null)
                 {
@@ -1148,9 +1509,9 @@ namespace NtoboaFund.Controllers
                 await MessagingService.SendSms(Constants.MasterNumber, $"{ user.FirstName} { user.LastName} has been paid {stakeType.AmountToWin} Cedi(s) as returns for {stakeType.Period} {entityType.ToString()} Ntoboa of {stakeType.Amount} Cedi(s) with Transfer Id {stakeType.TransferId} and Transaction Id of {record.TransactionId}", "NTB Payouts");
 
                 await dbContext.SaveChangesAsync();
-                return ("Successfully Recorded Payment", result.isConfirmed);
+                return ("Successfully Recorded Payment", true);
             }
-            catch
+            catch(Exception ex)
             {
                 return ("Unknown Error", false);
             }
@@ -1221,7 +1582,17 @@ namespace NtoboaFund.Controllers
             return resultString;
         }
 
-
+        string getStatus(bool? confirmed)
+        {
+            if (confirmed == true)
+                return "paid";
+            else if (confirmed == false)
+                return "failed";
+            else
+            {
+                return "unknown";
+            }
+        }
     }
 
 
@@ -1261,7 +1632,7 @@ namespace NtoboaFund.Controllers
         /// <summary>
         /// The transferId Used to get the particular entityType
         /// </summary>
-        public long? TransferId { get; set; }
+        public string TransferId { get; set; }
 
         /// <summary>
         /// The transaction Id of the current cashout

@@ -16,5 +16,7 @@ namespace NtoboaFund.Helpers
         public MNotifySettingsDTO MNotifySettings { get; set; }
 
         public ReddeSettingsDTO ReddeSettings { get; set; }
+
+        public TellerSettingsDTO TellerSettings { get; set; }
     }
 }

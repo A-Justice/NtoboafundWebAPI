@@ -30,14 +30,25 @@ namespace NtoboaFund.Data.DBContext
 
         public DbSet<ContactUs> ContactUs { get; set; }
 
+        public DbSet<UssdSession> UssdSessions { get; set; }
+
+        public DbSet<CrowdFund> CrowdFunds { get; set; }
+
+        public DbSet<CrowdFundType> CrowdFundTypes { get; set; }
+
+        public DbSet<Donation> Donations { get; set; }
+
+
         public NtoboaFundDbContext(DbContextOptions<NtoboaFundDbContext> options)
             : base(options)
         {
-
+           
         }
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            
             base.OnModelCreating(builder);
+            
         }
 
     }

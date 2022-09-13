@@ -32,6 +32,8 @@ namespace NtoboaFund.Data.Models
 
         public decimal Points { get; set; }
 
+        public decimal Wallet { get; set; }
+
         /// <summary>
         /// Either Mobile Money or Bank Account
         /// </summary>
@@ -42,5 +44,8 @@ namespace NtoboaFund.Data.Models
         public virtual ICollection<Scholarship> Scholarships { get; set; }
 
         public virtual ICollection<Business> Businesses { get; set; }
+
+        public virtual ICollection<CrowdFund> CrowdFunds { get; set; }
+
     }
 }

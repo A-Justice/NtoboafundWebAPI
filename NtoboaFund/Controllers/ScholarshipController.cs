@@ -29,13 +29,13 @@ namespace NtoboaFund.Controllers
         [HttpGet]
         public IEnumerable<Scholarship> GetScholarships()
         {
-            return dbContext.Scholarships;
+            return dbContext.Scholarships.Where(i=>i.deleted == false);
         }
 
         [HttpGet("foruser/{userId}")]
         public IEnumerable<Scholarship> GetScholarships([FromRoute]string userId)
         {
-            return dbContext.Scholarships.Where(l => l.UserId == userId);
+            return dbContext.Scholarships.Where(i=>i.deleted == false).Where(l => l.UserId == userId);
         }
 
         [HttpGet("bystatus/{status}")]
@@ -44,13 +44,13 @@ namespace NtoboaFund.Controllers
             if (status.ToLower() == "all")
                 return GetScholarships();
 
-            return dbContext.Scholarships.Where(i => i.Status.ToLower() == status);
+            return dbContext.Scholarships.Where(i=>i.deleted == false).Where(i => i.Status.ToLower() == status);
         }
 
         [HttpGet("unpaidwinnerscount")]
         public async Task<int> GetUnpaidWinnersCount()
         {
-            return await dbContext.Scholarships.Where(i => i.Status.ToLower() == "won" && i.User.UserType == 0).CountAsync();
+            return await dbContext.Scholarships.Where(i=>i.deleted == false).Where(i => i.Status.ToLower() == "won" && i.User.UserType == 0).CountAsync();
         }
 
 
@@ -58,11 +58,11 @@ namespace NtoboaFund.Controllers
         public IEnumerable<Scholarship> GetScholarshipsByType(string type)
         {
             if (type.ToLower() == "all")
-                return dbContext.Scholarships;
+                return dbContext.Scholarships.Where(i=>i.deleted == false);
             else if (type.ToLower() == "2")
-                return dbContext.Scholarships.Where(i => i.User.UserType.ToString() == type.ToLower());
+                return dbContext.Scholarships.Where(i=>i.deleted == false).Where(i => i.User.UserType.ToString() == type.ToLower());
             else
-                return dbContext.Scholarships.Where(i => i.User.UserType != 2);
+                return dbContext.Scholarships.Where(i=>i.deleted == false).Where(i => i.User.UserType != 2);
         }
 
 
@@ -72,7 +72,7 @@ namespace NtoboaFund.Controllers
         public IEnumerable<Scholarship> Winners()
         {
             //Request
-            return dbContext.Scholarships.Where(l => l.Status == "won").Include("User");
+            return dbContext.Scholarships.Where(i=>i.deleted == false).Where(l => l.Status == "won").Include("User");
         }
 
         // GET: api/Scholarships/5
@@ -178,7 +178,7 @@ namespace NtoboaFund.Controllers
 
         private bool ScholarshipExists(int id)
         {
-            return dbContext.Scholarships.Any(e => e.Id == id);
+            return dbContext.Scholarships.Where(i=>i.deleted == false).Any(e => e.Id == id);
         }
     }
 }

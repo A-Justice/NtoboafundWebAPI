@@ -1,4 +1,5 @@
-﻿using DalSoft.Hosting.BackgroundQueue.DependencyInjection;
+﻿using AutoMapper;
+using DalSoft.Hosting.BackgroundQueue.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -11,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using NtoboaFund.Data.DBContext;
 using NtoboaFund.Data.Models;
 using NtoboaFund.Helpers;
+using NtoboaFund.Helpers.AutoMapper;
 using NtoboaFund.Services;
 using NtoboaFund.Services.HostedServices;
 using NtoboaFund.SignalR;
@@ -45,6 +47,7 @@ namespace NtoboaFund
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
             services.AddCors(options => options.AddPolicy("NtuboaDefault", builder => builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
             //GearHost
@@ -97,6 +100,7 @@ namespace NtoboaFund
                 };
             });
 
+            services.AddSession();
 
             // configure DI for application services
             services.AddScoped<IUserService, UserService>();
@@ -106,7 +110,7 @@ namespace NtoboaFund
             services.AddScoped<StakersHub>();
             services.AddScoped<DummyService>();
             services.AddScoped<AnalysisService>();
-            services.AddSingleton<ReddePaymentService>();
+            services.AddScoped<ReddePaymentService>();
             services.AddHostedService<WinnerSelectorHostedService>();
             services.AddBackgroundQueue(onException: exception =>
             {
@@ -119,6 +123,9 @@ namespace NtoboaFund
                 options.EnableDetailedErrors = true;
                 options.KeepAliveInterval = TimeSpan.FromHours(1);
             });
+
+            services.AddAutoMapper(c => c.AddProfile<AutoMapperProfile>(), typeof(Startup));
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -156,10 +163,24 @@ namespace NtoboaFund
                 });
             });
 
+            app.UseSession();
+            
             app.UseMvc();
 
             CreateDefaultUserBuilder(dbContext);
             CreateUserRoles(userManager, roleManager);
+
+            //var users = dbContext.Users.ToList().Where(i => "jacob@adroit360gh.com,justice.addico.ja@gmail.com,etawiahgyimah@gmail.com,owusuansahpresley@gmail.com,enockydarkoh@gmail.com,emmanuelabakah923@gmail.com,wegbe2000@gmail.com,benjaminidoo@gmail.com,antoinettewendylartey@gmail.com,agyemangannegret40@gmail.com,dennisofori247@gmail.com,baafiacheampongphilip@gmail.com,abdulkadirofficial6@gmail.com,jyeboah500@gmail.com,officialwenger@gmail.com,realmanizzle7@gmail.com,johnasiedu100@gmail.com,oforisilva@gmail.com,jabisterjabai@gmail.com,greenaugustus44@gmail.com,bigjoe3399@gmail.com,elmerboateng@gmail.com,adjoagrizzy@gmail.com,quabenaocran@gmail.com,oseiyaw13@yahoo.com".Split(",").Contains(i.Email)).ToList();
+
+            //foreach(var user in users)
+            //{
+            //    user.Wallet = 10;
+            //    dbContext.Entry(user).State = EntityState.Modified;
+            //}
+           
+           
+            dbContext.SaveChanges();
+
         }
 
         private static void CreateUserRoles(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)

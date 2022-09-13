@@ -2,6 +2,9 @@
 using Newtonsoft.Json.Serialization;
 using NtoboaFund.Data;
 using NtoboaFund.Data.DTO_s;
+using NtoboaFund.Data.DTOs;
+using NtoboaFund.Data.Interfaces;
+using NtoboaFund.Data.Models;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -13,10 +16,11 @@ namespace NtoboaFund.Helpers
 {
     public static class Misc
     {
+        public static string FrontUrl { get; set; } = "http://ntoboafund.com/payment";
 
         public static string GetRegisteredUserSmsMessage()
         {
-            return "Welcome to Ntoboafund, your registration was successful.You can dial *714*50# to invest on any mobile phone";
+            return "Welcome to Ntoboafund, your registration was successful.You can dial *284# to invest on any mobile phone";
         }
 
         public static string GetStakedUserSmsMessage(EntityTypes entityType, Period? period, decimal amount)
@@ -35,7 +39,7 @@ namespace NtoboaFund.Helpers
                 case Period.Weekly:
                     drawDate = (getDateString(DateTime.Now.EndOfMonth(18, 0, 0, 0)));
                     break;
-                case Period.Quaterly:
+                case Period.Quarterly:
                     drawDate = (getDateString(DateTime.Now.NextQuater(18, 0, 0, 0)));
                     break;
                 default:
@@ -45,7 +49,7 @@ namespace NtoboaFund.Helpers
 
             return $"You have successfully made a {period.ToString()} {entityType.ToString()} " +
                 $"ntoboa of {amount.ToString("0.##")} cedi(s), your draw will happen on {drawDate}." +
-                $" Stay tuned.";
+                $" Stay tuned. Goto ntoboafund.com/{entityType.ToString().ToLower()} to watch the live draw";
         }
 
         /// <summary>
@@ -55,6 +59,7 @@ namespace NtoboaFund.Helpers
         /// <returns></returns>
         public static string FormatGhanaianPhoneNumber(string phoneNumber)
         {
+
             if (phoneNumber.StartsWith("0") && phoneNumber.Length == 10)
             {
                 return "+233" + phoneNumber.Substring(1);
@@ -73,6 +78,7 @@ namespace NtoboaFund.Helpers
 
         public static bool IsCorrectGhanaianNumber(string phoneNumber)
         {
+
             if (phoneNumber.StartsWith("0") && phoneNumber.Length == 10)
             {
                 return true;
@@ -87,6 +93,7 @@ namespace NtoboaFund.Helpers
             }
 
             return false;
+            
         }
 
         /// <summary>
@@ -181,6 +188,20 @@ namespace NtoboaFund.Helpers
             return null;
         }
 
+        public static string getTellerRSwitch(string phoneNumber)
+        {
+            var phone = Misc.FormatGhanaianPhoneNumber(phoneNumber);
+            var networkDeterminants = phone.Substring(5, 1);
+            if (networkDeterminants == "4" || networkDeterminants == "5" || networkDeterminants == "9")
+                return "MTN";
+            else if (networkDeterminants == "0")
+                return "VDF";
+            else if (networkDeterminants == "6" || networkDeterminants == "7")
+                return "ATL";
+
+            return null;
+        }
+
         static string getDateString(DateTime date)
         {
             return date.ToLongDateString();
@@ -190,11 +211,11 @@ namespace NtoboaFund.Helpers
             var amountStaked = Convert.ToDecimal(amount);
             switch (type)
             {
-                case "lkm":
+                case "luckyme":
                     return GetDrawMessage(EntityTypes.Luckyme, amountStaked, period, momoNumber);
-                case "bus":
+                case "business":
                     return GetDrawMessage(EntityTypes.Luckyme, amountStaked, period, momoNumber);
-                case "sch":
+                case "scholarship":
                     return GetDrawMessage(EntityTypes.Luckyme, amountStaked, period, momoNumber);
                 default:
                     return "";
@@ -217,19 +238,17 @@ namespace NtoboaFund.Helpers
                 sBuilder.AppendLine($"Your Potential Returns is {(amountStaked * Constants.LuckymeStakeOdds).ToString("0.##")} Cedis.");
                 if (period == "daily")
                 {
-                    sBuilder.AppendLine($"A winner will be anounced at 6:00 pm on {DateTime.Now.DailyStakeEndDate().ToLongDateString()}.");
+                    sBuilder.AppendLine($"A winner will be anounced on {DateTime.Now.ThreePerDay()}.");
                 }
                 else if (period == "weekly")
                 {
                     sBuilder.AppendLine($"A winner will be anounced at 6:00 pm on {DateTime.Now.EndOfWeek(18, 0, 0, 0).ToLongDateString()}.");
-
                 }
                 else if (period == "monthly")
                 {
                     sBuilder.AppendLine($"A winner will be anounced at 6:00 pm on {DateTime.Now.EndOfMonth(18, 0, 0, 0).ToLongDateString()}.");
-
                 }
-                sBuilder.AppendLine($"You have been added to the current LuckyMe {period} participants. Stay tuned");
+                sBuilder.AppendLine($"You have been added to the current LuckyMe {period} participants. Stay tuned, Goto ntoboafund.com/{type.ToString().ToLower()} to watch the live draw");
 
             }
             else if (type == EntityTypes.Business)
@@ -237,14 +256,17 @@ namespace NtoboaFund.Helpers
                 sBuilder.AppendLine($"Thank you for your {amountStaked.ToString("0.##")} Cedis Business stake.");
                 sBuilder.AppendLine($"Your Potential Returns is {(amountStaked * Constants.BusinessStakeOdds).ToString("0.##")} Cedis.");
                 sBuilder.AppendLine($"A winner will be anounced at 6:00 pm on {DateTime.Now.EndOfMonth(18, 0, 0, 0).ToLongDateString()}.");
-                sBuilder.AppendLine($"You have been added to the current business participants. Stay tuned");
+                sBuilder.AppendLine($"You have been added to the current business participants. Stay tuned, Goto ntoboafund.com/{type.ToString().ToLower()} to watch the live draw");
             }
             else if (type == EntityTypes.Scholarship)
             {
                 sBuilder.AppendLine($"Thank you for your {amountStaked.ToString("0.##")} Cedis Scholarship stake.");
                 sBuilder.AppendLine($"Your Potential Returns is {(amountStaked * Constants.ScholarshipStakeOdds).ToString("0.##")} Cedis.");
                 sBuilder.AppendLine($"A winner will be anounced at 6:00 pm on {DateTime.Now.NextQuater(18, 0, 0, 0).ToLongDateString()}.");
-                sBuilder.AppendLine($"You have been added to the current scholarship participants. Stay tuned");
+                sBuilder.AppendLine($"You have been added to the current scholarship participants. Stay tuned, Goto ntoboafund.com/{type.ToString().ToLower()} to watch the live draw");
+            }else if(type == EntityTypes.CrowdFund)
+            {
+                sBuilder.AppendLine($"Thank you for your {amountStaked.ToString("0.##")} Cedis Donation to support {period}.");
             }
 
             return sBuilder.ToString();
@@ -287,7 +309,7 @@ namespace NtoboaFund.Helpers
             var sBuilder = new StringBuilder();
             var amountStaked = Convert.ToDecimal(amount);
             var c = amountStaked > 1 ? "Cedis" : "Cedi";
-            if (type == "lkm")
+            if (type == "luckyme")
             {
                 sBuilder.AppendLine($"NtoboaType : LuckyMe");
                 sBuilder.AppendLine($"InvestedAmount : {amount} {c}");
@@ -307,7 +329,7 @@ namespace NtoboaFund.Helpers
 
                 }
             }
-            if (type == "bus")
+            if (type == "business")
             {
                 sBuilder.AppendLine($"NtoboaType : Business");
                 sBuilder.AppendLine($"InvestedAmount : {amount} {c}");
@@ -315,7 +337,7 @@ namespace NtoboaFund.Helpers
                 sBuilder.AppendLine($"DrawDate {DateTime.Now.EndOfMonth(18, 0, 0, 0).ToLongDateString()}.");
 
             }
-            if (type == "sch")
+            if (type == "scholarship")
             {
                 sBuilder.AppendLine($"NtoboaType : Scholarship");
                 sBuilder.AppendLine($"InvestedAmount : {amount} {c}");
@@ -351,7 +373,7 @@ namespace NtoboaFund.Helpers
         }
 
 
-        public static async Task<string> GenerateSlydePayToken(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings)
+        public static async Task<string> GenerateSlydePayToken(EntityTypes entityType, ITransactionItem stakeType, SlydePayApiSettingsDTO slydePayApiSettings)
         {
 
             try
@@ -400,26 +422,27 @@ namespace NtoboaFund.Helpers
 
         #region SlydePayMethods
 
-        public static async Task<string> GenerateAndSendSlydePayMomoInvoice(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings, string MomoNumber)
+        public static async Task<string> GenerateAndSendSlydePayMomoInvoice(EntityTypes entityType, ITransactionItem stakeType, SlydePayApiSettingsDTO slydePayApiSettings, string MomoNumber)
         {
             if (string.IsNullOrEmpty(MomoNumber))
                 return null;
 
             return await GenerateAndSendSlydePayInvoice(entityType, stakeType, slydePayApiSettings, getSlydePayOption(MomoNumber), MomoNumber);
         }
-        public static async Task<string> GenerateAndSendSlydePayCardInvoice(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings, string email)
+
+        public static async Task<string> GenerateAndSendSlydePayCardInvoice(EntityTypes entityType, ITransactionItem stakeType, SlydePayApiSettingsDTO slydePayApiSettings, string email)
         {
             return await GenerateAndSendSlydePayInvoice(entityType, stakeType, slydePayApiSettings, "VISA", null, email);
 
         }
 
-        public static async Task<string> GenerateAndSendSlydePayAnkasaInvoice(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings)
+        public static async Task<string> GenerateAndSendSlydePayAnkasaInvoice(EntityTypes entityType, ITransactionItem stakeType, SlydePayApiSettingsDTO slydePayApiSettings)
         {
             return await GenerateAndSendSlydePayInvoice(entityType, stakeType, slydePayApiSettings, "SLYDEPAY");
 
         }
 
-        private static async Task<string> GenerateAndSendSlydePayInvoice(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings, string PayOption, string MomoNumber = null, string email = null)
+        private static async Task<string> GenerateAndSendSlydePayInvoice(EntityTypes entityType, ITransactionItem stakeType, SlydePayApiSettingsDTO slydePayApiSettings, string PayOption, string MomoNumber = null, string email = null)
         {
             string customerMobileNumber = MomoNumber ?? stakeType.User.PhoneNumber;
             string customerEmail = email == "default" ? stakeType.User.Email : email;
@@ -504,8 +527,7 @@ namespace NtoboaFund.Helpers
 
         }
 
-
-        public static async Task<SlydePayPaymentStatusResponse> CancelSlydePayTransaction(EntityTypes entityType, IStakeType stakeType, SlydePayApiSettingsDTO slydePayApiSettings)
+        public static async Task<SlydePayPaymentStatusResponse> CancelSlydePayTransaction(EntityTypes entityType, ITransactionItem stakeType, SlydePayApiSettingsDTO slydePayApiSettings)
         {
             try
             {
@@ -550,7 +572,7 @@ namespace NtoboaFund.Helpers
         /// <param name="redSettings"></param>
         /// <param name="momoAndVoucher"></param>
         /// <returns>Transaction Id</returns>
-        public static async Task<int?> GenerateAndSendReddeMomoInvoice(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO redSettings, string momoAndVoucher)
+        public static async Task<int?> GenerateAndSendReddeMomoInvoice(EntityTypes entityType, ITransactionItem stakeType, ReddeSettingsDTO redSettings, string momoAndVoucher)
         {
             var mandV = momoAndVoucher.Split('*');
             var MomoNumber = mandV[0];
@@ -569,7 +591,7 @@ namespace NtoboaFund.Helpers
         /// <param name="reddeSettings"></param>
         /// <param name="MomoNumber"></param>
         /// <returns>The generated token and checkout Tranaction id</returns>
-        public static async Task<(string token, int? checkoutransId)> GenerateReddeToken(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO reddeSettings, string MomoNumber = null)
+        public static async Task<(string token, int? checkoutransId)> GenerateReddeToken(EntityTypes entityType, ITransactionItem stakeType, ReddeSettingsDTO reddeSettings, string MomoNumber = null)
         {
             string customerMobileNumber = MomoNumber ?? stakeType.User.PhoneNumber;
             //string customerEmail = email == "default" ? stakeType.User.Email : email;
@@ -612,7 +634,7 @@ namespace NtoboaFund.Helpers
 
         }
 
-        private static async Task<int?> GenerateAndSendReddeInvoice(EntityTypes entityType, IStakeType stakeType, ReddeSettingsDTO reddeSettings, string PayOption, string MomoNumber = null, string voucher = null)
+        private static async Task<int?> GenerateAndSendReddeInvoice(EntityTypes entityType, ITransactionItem stakeType, ReddeSettingsDTO reddeSettings, string PayOption, string MomoNumber = null, string voucher = null)
         {
             string customerMobileNumber = MomoNumber ?? stakeType.User.PhoneNumber;
             //string customerEmail = email == "default" ? stakeType.User.Email : email;
@@ -658,6 +680,217 @@ namespace NtoboaFund.Helpers
 
         #endregion
 
+
+        #region theTellerMethods
+
+        public static async Task<(string token, string checkoutransId, string checkoutUrl, string status)> GenerateTellerToken(ITransactionItem transactionItem, ApplicationUser user, TellerSettingsDTO tellerSettings, string description, EntityTypes entityType)
+        {
+            var endpoint = tellerSettings.LiveEndpoint;
+            var apiKey = tellerSettings.LiveApiKey;
+            var apiUsername = tellerSettings.LiveUserName;
+
+            try
+            {
+                var transactionId = getTransactionId(transactionItem.Id,entityType);
+                //amount = prependWithZeros(Convert.ToInt32(transactionItem.Amount)),
+                TellerCheckoutRequest request = new TellerCheckoutRequest
+                {
+                    amount = prependWithZeros(Convert.ToInt32(transactionItem.Amount)),
+                    API_Key = apiKey,
+                    apiuser = apiUsername,
+                    desc = description,
+                    redirect_url = Misc.FrontUrl,
+                    merchant_id = tellerSettings.MerchantId,
+                    email = user.Email,
+                    transaction_id = transactionId
+                };
+
+                var httpClient = new HttpClient();
+
+
+                var data = JsonConvert.SerializeObject(request);
+                var stringContent = new StringContent(data);
+                //httpClient.DefaultRequestHeaders.Add("apikey", tellerSettings.ApiKey);
+                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+
+                var authenticationString = $"{apiUsername}:{apiKey}";
+                var base64EncodedAuthenticationString = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(authenticationString));
+
+                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"Basic {base64EncodedAuthenticationString}");
+
+                var responseMessage = await httpClient.PostAsync(endpoint, stringContent);
+
+                var contentString = await responseMessage.Content.ReadAsStringAsync();
+                TellerCheckoutResponse response = JsonConvert.DeserializeObject<TellerCheckoutResponse>(contentString);
+
+                return (response.Token, transactionId, response.Checkout_url, response.Reason);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GenerateReddeToken {ex.Message}");
+                return (null, null, null, null);
+            }
+
+        }
+
+        public static async Task<int> GenerateAndSendTellerInvoice(ITransactionItem transactionItem, TellerSettingsDTO tellerSettings, string momoAndVoucher,string description,EntityTypes entityType)
+        {
+            var endpoint = tellerSettings.LiveBaseEndpoint+ "/v1.1/transaction/process";
+            var apiKey = tellerSettings.LiveApiKey;
+            var apiUsername = tellerSettings.LiveUserName;
+
+            var mandV = momoAndVoucher.Split('*');
+            var MomoNumber = mandV[0];
+            var voucher = mandV[1];
+            if (string.IsNullOrEmpty(MomoNumber))
+                return -1;
+
+            try
+            {
+                
+                var transactionId = getTransactionId(transactionItem.Id,entityType);
+                //amount = prependWithZeros(Convert.ToInt32(transactionItem.Amount)),
+                TellerRestRequest request = new TellerRestRequest
+                {
+                    amount = prependWithZeros(Convert.ToInt32(transactionItem.Amount)),
+                    processing_code = "000200",
+                    desc = description,
+                    transaction_id = transactionId,
+                    merchant_id = tellerSettings.MerchantId,
+                    subscriber_number = MomoNumber,
+                    r_switch = getTellerRSwitch(MomoNumber),
+                    voucher_code=voucher
+                };
+
+                var httpClient = new HttpClient();
+
+
+                var data = JsonConvert.SerializeObject(request);
+                data = data.Replace("r_switch", "r-switch");
+                var stringContent = new StringContent(data);
+                httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
+                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+
+                var authenticationString = $"{apiUsername}:{apiKey}";
+                var base64EncodedAuthenticationString = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes(authenticationString));
+                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"Basic {base64EncodedAuthenticationString}");
+
+                var responseMessage = await httpClient.PostAsync(endpoint, stringContent);
+
+                var contentString = await responseMessage.Content.ReadAsStringAsync();
+                TellerRestResponse response = JsonConvert.DeserializeObject<TellerRestResponse>(contentString);
+
+                return response.code;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GenerateReddeToken {ex.Message}");
+                return -1;
+            }
+
+        }
+
+
+        public static string prependWithZeros(int integer)
+        {
+            int transIdLength = 12;
+            var idChars = (integer.ToString() + "00").ToCharArray();
+
+            var transId = "";
+
+            for (int i = 1; i <= transIdLength; i++)
+            {
+                var remainingRounds = (transIdLength + 1 - i);
+
+                if (remainingRounds <= idChars.Length)
+                {
+                    var index = idChars.Length - (remainingRounds);
+                    transId += idChars[index];
+                }
+                else
+                {
+                    transId += "0";
+                }
+            }
+
+            return transId;
+        }
+
+
+        public static string getTransactionId(int integer,EntityTypes entityType)
+        {
+            int transIdLength = 12;
+            var idChars = (integer.ToString() + "00").ToCharArray();
+
+           
+
+            var transId = "";
+
+            switch (entityType)
+            {
+                case EntityTypes.Luckyme:
+                    transId = "1";
+                    break;
+                case EntityTypes.Business:
+                    transId = "2";
+                    break;
+                case EntityTypes.Scholarship:
+                    transId = "3";
+                    break;
+                case EntityTypes.CrowdFund:
+                    transId = "4";
+                    break;
+                default:
+                    break;
+            }
+
+            for (int i = transId.Length+1; i <= transIdLength; i++)
+            {
+                var remainingRounds = (transIdLength + 1 - i);
+
+                if (remainingRounds <= idChars.Length)
+                {
+                    var index = idChars.Length - (remainingRounds);
+                    transId += idChars[index];
+                }
+                else
+                {
+                    transId += "0";
+                }
+            }
+
+            return transId;
+        }
+
+        #endregion
+
+        public static async Task<dynamic> PostRequest<T>(string url,dynamic requestObject)
+        {
+            try
+            {
+                var httpClient = new HttpClient();
+
+
+                var data = JsonConvert.SerializeObject(requestObject, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+                var stringContent = new StringContent(data);
+                stringContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+                var responseMessage = await httpClient.PostAsync(url, stringContent);
+
+                var contentString = await responseMessage.Content.ReadAsStringAsync();
+                T response = JsonConvert.DeserializeObject<T>(contentString);
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GenerateSlydePayToken {ex.Message}");
+                return null;
+            }
+        }
+
         public static string getTxRef(string phoneNumber)
         {
             var match = Regex.Match(phoneNumber, @"^(\w{2}).*(\w{2})$");
@@ -677,7 +910,6 @@ namespace NtoboaFund.Helpers
 
             return null;
         }
-
     }
 
 }

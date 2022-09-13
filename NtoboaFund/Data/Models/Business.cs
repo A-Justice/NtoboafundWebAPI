@@ -31,6 +31,8 @@ namespace NtoboaFund.Data.Models
 
         public string UserId { get; set; }
 
+        public bool deleted { get; set; }
+
         [ForeignKey("UserId")]
         public virtual ApplicationUser User { get; set; }
     }

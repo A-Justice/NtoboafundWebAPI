@@ -4,7 +4,8 @@
     {
         Luckyme,
         Business,
-        Scholarship
+        Scholarship,
+        CrowdFund
     }
 
     public enum Period
@@ -12,6 +13,6 @@
         Daily,
         Weekly,
         Monthly,
-        Quaterly
+        Quarterly
     }
 }

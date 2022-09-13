@@ -31,7 +31,7 @@ namespace NtoboaFund.Controllers
             var bSkip = bCount > 10 ? bCount - 10 : 0;
             var sSkip = sCount > 10 ? sCount - 10 : 0;
 
-            var luckyMeWinners = dbContext.LuckyMes.Where(l => l.Status == "won").Skip(lSkip).Select(i => new ParticipantDTO
+            var luckyMeWinners = dbContext.LuckyMes.Where(l => l.Status == "won").Skip(lSkip).OrderBy(i=>i.Id).Select(i => new ParticipantDTO
             {
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
@@ -42,7 +42,7 @@ namespace NtoboaFund.Controllers
                 DateDeclared = i.DateDeclared
 
             });
-            var scholarshipWinners = dbContext.Scholarships.Where(l => l.Status == "won").Skip(sSkip).Select(i => new ParticipantDTO
+            var scholarshipWinners = dbContext.Scholarships.Where(l => l.Status == "won").Skip(sSkip).OrderBy(i => i.Id).Select(i => new ParticipantDTO
             {
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,
@@ -53,7 +53,7 @@ namespace NtoboaFund.Controllers
                 DateDeclared = i.DateDeclared
 
             });
-            var businessWinners = dbContext.Businesses.Where(l => l.Status == "won").Skip(bSkip).Select(i => new ParticipantDTO
+            var businessWinners = dbContext.Businesses.Where(l => l.Status == "won").Skip(bSkip).OrderBy(i => i.Id).Select(i => new ParticipantDTO
             {
                 Id = i.Id,
                 UserName = i.User.FirstName + " " + i.User.LastName,

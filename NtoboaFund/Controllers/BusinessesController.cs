@@ -32,13 +32,13 @@ namespace NtoboaFund.Controllers
         [HttpGet]
         public IEnumerable<Business> GetBusinesses()
         {
-            return dbContext.Businesses;
+            return dbContext.Businesses.Where(i=>i.deleted == false);
         }
 
         [HttpGet("foruser/{userId}")]
         public IEnumerable<Business> GetBusinesses([FromRoute]string userId)
         {
-            return dbContext.Businesses.Where(l => l.UserId == userId);
+            return dbContext.Businesses.Where(i=>i.deleted == false).Where(l => l.UserId == userId);
         }
 
         [HttpGet("bystatus/{status}")]
@@ -47,24 +47,24 @@ namespace NtoboaFund.Controllers
             if (status.ToLower() == "all")
                 return GetBusinesses();
 
-            return dbContext.Businesses.Where(i => i.Status.ToLower() == status);
+            return dbContext.Businesses.Where(i=>i.deleted == false).Where(i => i.Status.ToLower() == status);
         }
 
         [HttpGet("bytype/{type}")]
         public IEnumerable<Business> GetBusinessesByType(string type)
         {
             if (type.ToLower() == "all")
-                return dbContext.Businesses;
+                return dbContext.Businesses.Where(i=>i.deleted == false);
             else if (type.ToLower() == "2")
-                return dbContext.Businesses.Where(i => i.User.UserType.ToString() == type.ToLower());
+                return dbContext.Businesses.Where(i=>i.deleted == false).Where(i => i.User.UserType.ToString() == type.ToLower());
             else
-                return dbContext.Businesses.Where(i => i.User.UserType != 2);
+                return dbContext.Businesses.Where(i=>i.deleted == false).Where(i => i.User.UserType != 2);
         }
 
         [HttpGet("unpaidwinnerscount")]
         public async Task<int> GetUnpaidWinnersCount()
         {
-            return await dbContext.Businesses.Where(i => i.Status.ToLower() == "won" && i.User.UserType == 0).CountAsync();
+            return await dbContext.Businesses.Where(i=>i.deleted == false).Where(i => i.Status.ToLower() == "won" && i.User.UserType == 0).CountAsync();
         }
 
 
@@ -74,7 +74,7 @@ namespace NtoboaFund.Controllers
         public IEnumerable<Business> Winners()
         {
             //Request
-            return dbContext.Businesses.Where(l => l.Status == "won").Include("User");
+            return dbContext.Businesses.Where(i=>i.deleted == false).Where(l => l.Status == "won").Include("User");
         }
 
         // GET: api/Businesses/5
@@ -180,7 +180,7 @@ namespace NtoboaFund.Controllers
 
         private bool BusinessExists(int id)
         {
-            return dbContext.Businesses.Any(e => e.Id == id);
+            return dbContext.Businesses.Where(i=>i.deleted == false).Any(e => e.Id == id);
         }
     }
 }

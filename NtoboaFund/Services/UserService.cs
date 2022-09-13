@@ -21,9 +21,9 @@ namespace NtoboaFund.Services
 {
     public interface IUserService
     {
-        ApplicationUser Authenticate(string username, string password);
+        ApplicationUser Authenticate(string phoneNumber, string password);
 
-        Task<Tuple<ApplicationUser, string>> Register(RegistrationDTO user, bool IsUssdUser = false);
+        Task<Tuple<ApplicationUser, string>> Register(RegistrationDTO user, bool IsUssdUser = false, NtoboaFundDbContext _context = null, UserManager<ApplicationUser> userManager = null, RoleManager<IdentityRole> roleManager = null, MessagingService messagingService = null);
 
         ApplicationUser EditUser(UserEditDTO user);
 
@@ -42,7 +42,7 @@ namespace NtoboaFund.Services
 
         ApplicationUser GetUserWithEmail(string email);
 
-        Task SendPasswordResetMessage(ApplicationUser user);
+        Task<string> SendPasswordResetMessage(ApplicationUser user);
 
         Task<IdentityResult> ResetPasswordAsync(ApplicationUser user, string token, string newPassword);
 
@@ -61,10 +61,10 @@ namespace NtoboaFund.Services
         private NtoboaFundDbContext dbContext;
         public static IHostingEnvironment _environment;
 
-        public UserManager<ApplicationUser> UserManager { get; }
-        public RoleManager<IdentityRole> RoleManager { get; }
-        public SignInManager<ApplicationUser> SignInManager { get; }
-        public MessagingService MessagingService { get; }
+        public UserManager<ApplicationUser> UserManager { get; set; }
+        public RoleManager<IdentityRole> RoleManager { get; set; }
+        public SignInManager<ApplicationUser> SignInManager { get; set; }
+        public MessagingService MessagingService { get; set; }
 
         public UserService(IOptions<AppSettings> appSettings, NtoboaFundDbContext _context,
             UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager
@@ -79,37 +79,69 @@ namespace NtoboaFund.Services
             _environment = environment;
         }
 
-        public ApplicationUser Authenticate(string username, string password)
+        public ApplicationUser Authenticate(string phoneNumber, string password)
         {
-            var signInResult = SignInManager.PasswordSignInAsync(username, password, false, false).Result;
+           
+            ApplicationUser user;
+            if (phoneNumber.Contains("@"))
+            {
+                //Admin Logging In
+                 user = dbContext.Users.FirstOrDefault(i => i.Email.ToLower() == phoneNumber.ToLower());
+
+            }
+            else
+            {
+                phoneNumber = "0" + Misc.NormalizePhoneNumber(phoneNumber);
+                user = dbContext.Users.Include("MomoDetails").Include("BankDetails").FirstOrDefault(i => i.PhoneNumber.ToLower() == phoneNumber.ToLower());
+
+            }
+            var signInResult = SignInManager.CheckPasswordSignInAsync(user, password, false).Result;
 
             // return null if ApplicationUser not found
             if (!signInResult.Succeeded)
                 return null;
 
-            var user = dbContext.Users.Include("BankDetails").Include("MomoDetails").FirstOrDefault(i => i.UserName.ToLower() == username.ToLower());
+            
 
             user = GenerateTokenForUser(user);
-
 
             return user;
         }
 
-        public async Task<Tuple<ApplicationUser, string>> Register(RegistrationDTO regUser, bool IsUssdUser = false)
+        public async Task<Tuple<ApplicationUser, string>> Register(RegistrationDTO regUser, bool IsUssdUser = false, NtoboaFundDbContext _context = null, UserManager<ApplicationUser> _userManager = null, RoleManager<IdentityRole> _roleManager = null, MessagingService _messagingService = null)
         {
+            if (_context!=null)
+            {
+                dbContext = _context;
+            }
+            if (_userManager != null)
+            {
+                UserManager = _userManager;
+            }
+            if (_roleManager != null)
+            {
+                RoleManager = _roleManager;
+            }
+            if (_messagingService != null)
+            {
+                MessagingService = _messagingService;
+            }
+
             ApplicationUser user = null;
 
             //Normalize the phoneNumber
             regUser.PhoneNumber = "0" + Misc.NormalizePhoneNumber(regUser.PhoneNumber);
 
-            var User = dbContext.Users.FirstOrDefault(x => x.Email == regUser.Email);
+            //var User = dbContext.Users.FirstOrDefault(x => x.Email == regUser.Email);
 
-            if (User != null)
-            {
-                return Tuple.Create<ApplicationUser, string>(null, "User With Same Email Exists");
-            }
+            //if (User != null)
+            //{
+            //    return Tuple.Create<ApplicationUser, string>(null, "User With Same Email Exists");
+            //}
 
-            User = dbContext.Users.FirstOrDefault(x => Misc.NormalizePhoneNumber(x.PhoneNumber) == Misc.NormalizePhoneNumber(regUser.PhoneNumber) && x.FirstName != regUser.PhoneNumber);
+            var nomalizedPhoneNumber = Misc.NormalizePhoneNumber(regUser.PhoneNumber);
+
+            var User = dbContext.Users.FirstOrDefault(x => x.PhoneNumber.Contains(nomalizedPhoneNumber) && x.FirstName != regUser.PhoneNumber);
             if (User != null)
             {
                 return Tuple.Create<ApplicationUser, string>(null, "User With Same Phone Number Exists");
@@ -120,7 +152,7 @@ namespace NtoboaFund.Services
                 return Tuple.Create<ApplicationUser, string>(null, "Passwords Do Not Match");
             }
 
-            User = dbContext.Users.FirstOrDefault(x => Misc.NormalizePhoneNumber(x.PhoneNumber) == Misc.NormalizePhoneNumber(regUser.PhoneNumber) && x.FirstName == regUser.PhoneNumber);
+            User = dbContext.Users.FirstOrDefault(x => x.PhoneNumber.Contains(nomalizedPhoneNumber) && x.FirstName == regUser.PhoneNumber);
 
             if (User != null)
             {
@@ -159,7 +191,7 @@ namespace NtoboaFund.Services
 
             user = new ApplicationUser
             {
-                UserName = regUser.Email,
+                UserName = regUser.FirstName,
                 FirstName = regUser.FirstName,
                 LastName = regUser.LastName,
                 PhoneNumber = regUser.PhoneNumber,
@@ -179,26 +211,26 @@ namespace NtoboaFund.Services
 
 
 
-            if (regUser.Images?.Length > 0)
-            {
-                try
-                {
-                    if (!Directory.Exists(_environment.WebRootPath + "\\uploads\\"))
-                    {
-                        Directory.CreateDirectory(_environment.WebRootPath + "\\uploads\\");
-                    }
-                    using (FileStream filestream = File.Create(_environment.WebRootPath + "\\uploads\\" + regUser.Email.Split('@')[0] + ".jpeg"))
-                    {
-                        regUser.Images.CopyTo(filestream);
-                        filestream.Flush();
-                        //return "\\uploads\\" + regUser.Images.FileName;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // return ex.ToString();
-                }
-            }
+            //if (regUser.Images?.Length > 0)
+            //{
+            //    try
+            //    {
+            //        if (!Directory.Exists(_environment.WebRootPath + "\\uploads\\"))
+            //        {
+            //            Directory.CreateDirectory(_environment.WebRootPath + "\\uploads\\");
+            //        }
+            //        using (FileStream filestream = File.Create(_environment.WebRootPath + "\\uploads\\" + regUser.Email.Split('@')[0] + ".jpeg"))
+            //        {
+            //            regUser.Images.CopyTo(filestream);
+            //            filestream.Flush();
+            //            //return "\\uploads\\" + regUser.Images.FileName;
+            //        }
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        // return ex.ToString();
+            //    }
+            //}
 
 
             IdentityResult result = UserManager.CreateAsync
@@ -250,7 +282,7 @@ namespace NtoboaFund.Services
             return await UserManager.ChangePasswordAsync(user, currentPassword, newPassword);
         }
 
-        public async Task SendPasswordResetMessage(ApplicationUser user)
+        public async Task<string> SendPasswordResetMessage(ApplicationUser user)
         {
             string path = _environment.WebRootPath + "\\files\\resetpassword.txt";
             string html = File.ReadAllText(path);
@@ -261,6 +293,7 @@ namespace NtoboaFund.Services
 
             await MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Password Reset", html);
 
+            return uniqueCode;
         }
 
         async Task<string> GetUniqueCodeForMailReset(ApplicationUser user)
@@ -299,12 +332,10 @@ namespace NtoboaFund.Services
         {
             regUser.PhoneNumber = "0" + Misc.NormalizePhoneNumber(regUser.PhoneNumber);
             var user = dbContext.Users.Find(regUser.Id);
-            user.UserName = regUser.Email;
-            user.NormalizedUserName = regUser.Email.ToUpper();
+            user.UserName = regUser.FirstName;
+            user.NormalizedUserName = regUser.FirstName.ToUpper();
             user.FirstName = regUser.FirstName == "null" ? null : regUser.FirstName;
-            user.LastName = regUser.LastName == "null" ? null : regUser.LastName;
             user.Email = regUser.Email == "null" ? null : regUser.Email;
-            user.NormalizedEmail = regUser.Email.ToUpper();
             user.PhoneNumber = regUser.PhoneNumber == "null" ? null : regUser.PhoneNumber;
 
             if (user.MomoDetails == null)
@@ -350,6 +381,7 @@ namespace NtoboaFund.Services
             s.TotalScholarshipStakes = dbContext.Scholarships.Where(i => i.UserId == user.Id && i.Status != "pending").Count();
             s.TotalBusinessStakes = dbContext.Businesses.Where(i => i.UserId == user.Id && i.Status != "pending").Count();
             s.TotalStakes = s.TotalLuckymeStakes + s.TotalScholarshipStakes + s.TotalBusinessStakes;
+            s.Wallet = user.Wallet;
 
             return s;
         }
@@ -359,6 +391,8 @@ namespace NtoboaFund.Services
             // return users without passwords
             return dbContext.Users.ToList();
         }
+
+
 
         public ApplicationUser GetUser(string Id)
         {
@@ -396,12 +430,15 @@ namespace NtoboaFund.Services
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.Name, User.Id.ToString())
+                    new Claim(ClaimTypes.NameIdentifier, User.Id.ToString())
                 }),
+                
                 Expires = DateTime.UtcNow.AddDays(7),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            var id = new IdentityOptions().ClaimsIdentity.UserIdClaimType;
             User.Token = tokenHandler.WriteToken(token);
             return User;
         }

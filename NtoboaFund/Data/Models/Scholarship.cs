@@ -28,11 +28,13 @@ namespace NtoboaFund.Data.Models
         [Required]
         public string Institution { get; set; }
 
-        [Required]
+        //[Required]
         public string Program { get; set; }
 
-        [Required]
+        //[Required]
         public string StudentId { get; set; }
+
+        public string StudentName { get; set; }
 
         /// <summary>
         /// Player type can either be parent or
@@ -46,6 +48,8 @@ namespace NtoboaFund.Data.Models
 
 
         public string UserId { get; set; }
+
+        public bool deleted { get; set; }
 
         [ForeignKey("UserId")]
         public virtual ApplicationUser User { get; set; }

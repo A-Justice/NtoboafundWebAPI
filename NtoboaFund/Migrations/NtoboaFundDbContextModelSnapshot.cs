@@ -179,6 +179,8 @@ namespace NtoboaFund.Migrations
 
                     b.Property<int>("UserType");
 
+                    b.Property<decimal>("Wallet");
+
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedEmail")
@@ -231,6 +233,8 @@ namespace NtoboaFund.Migrations
 
                     b.Property<string>("UserId");
 
+                    b.Property<bool>("deleted");
+
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
@@ -259,6 +263,87 @@ namespace NtoboaFund.Migrations
                     b.ToTable("ContactUs");
                 });
 
+            modelBuilder.Entity("NtoboaFund.Data.Models.CrowdFund", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("DateCreated");
+
+                    b.Property<string>("Description");
+
+                    b.Property<string>("EndDate");
+
+                    b.Property<string>("MainImageUrl");
+
+                    b.Property<string>("PhoneNumber");
+
+                    b.Property<string>("SecondImageUrl");
+
+                    b.Property<string>("ThirdImageUrl");
+
+                    b.Property<string>("Title");
+
+                    b.Property<decimal>("TotalAmount");
+
+                    b.Property<decimal>("TotalAmountRecieved");
+
+                    b.Property<int>("TypeId");
+
+                    b.Property<string>("UserId");
+
+                    b.Property<string>("videoUrl");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TypeId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CrowdFunds");
+                });
+
+            modelBuilder.Entity("NtoboaFund.Data.Models.CrowdFundType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<string>("Name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CrowdFundTypes");
+                });
+
+            modelBuilder.Entity("NtoboaFund.Data.Models.Donation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                    b.Property<decimal>("Amount");
+
+                    b.Property<int>("CrowdFundId");
+
+                    b.Property<string>("Date");
+
+                    b.Property<string>("TxRef");
+
+                    b.Property<string>("UserId");
+
+                    b.Property<bool>("paid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CrowdFundId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Donations");
+                });
+
             modelBuilder.Entity("NtoboaFund.Data.Models.LuckyMe", b =>
                 {
                     b.Property<int>("Id")
@@ -282,6 +367,8 @@ namespace NtoboaFund.Migrations
                     b.Property<string>("TxRef");
 
                     b.Property<string>("UserId");
+
+                    b.Property<bool>("deleted");
 
                     b.HasKey("Id");
 
@@ -354,19 +441,21 @@ namespace NtoboaFund.Migrations
                     b.Property<string>("PlayerType")
                         .IsRequired();
 
-                    b.Property<string>("Program")
-                        .IsRequired();
+                    b.Property<string>("Program");
 
                     b.Property<string>("Status");
 
-                    b.Property<string>("StudentId")
-                        .IsRequired();
+                    b.Property<string>("StudentId");
+
+                    b.Property<string>("StudentName");
 
                     b.Property<int?>("TransferId");
 
                     b.Property<string>("TxRef");
 
                     b.Property<string>("UserId");
+
+                    b.Property<bool>("deleted");
 
                     b.HasKey("Id");
 
@@ -448,6 +537,20 @@ namespace NtoboaFund.Migrations
                     b.ToTable("UserBuilders");
                 });
 
+            modelBuilder.Entity("NtoboaFund.Data.Models.UssdSession", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("ClientState");
+
+                    b.Property<string>("SessionId");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UssdSessions");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole")
@@ -505,6 +608,30 @@ namespace NtoboaFund.Migrations
                 {
                     b.HasOne("NtoboaFund.Data.Models.ApplicationUser", "User")
                         .WithMany("Businesses")
+                        .HasForeignKey("UserId");
+                });
+
+            modelBuilder.Entity("NtoboaFund.Data.Models.CrowdFund", b =>
+                {
+                    b.HasOne("NtoboaFund.Data.Models.CrowdFundType", "CrowdFundType")
+                        .WithMany("CrowdFunds")
+                        .HasForeignKey("TypeId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("NtoboaFund.Data.Models.ApplicationUser", "User")
+                        .WithMany("CrowdFunds")
+                        .HasForeignKey("UserId");
+                });
+
+            modelBuilder.Entity("NtoboaFund.Data.Models.Donation", b =>
+                {
+                    b.HasOne("NtoboaFund.Data.Models.CrowdFund", "CrowdFund")
+                        .WithMany("Donations")
+                        .HasForeignKey("CrowdFundId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("NtoboaFund.Data.Models.ApplicationUser", "User")
+                        .WithMany()
                         .HasForeignKey("UserId");
                 });
 

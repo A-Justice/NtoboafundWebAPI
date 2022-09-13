@@ -145,31 +145,43 @@ namespace NtoboaFund.Helpers
         public static DateTime DailyStakeEndDate(this DateTime dateTime)
         {
 
+            return ThreePerDay(dateTime);
 
-            if (dateTime.Hour >= 18 && dateTime.Second > 0)
+            //if (dateTime.Hour >= 18 && dateTime.Second >= 0)
+            //{
+
+            //    dateTime = dateTime.AddDays(1);
+            //}
+
+            //return new DateTime(
+            //    dateTime.Year,
+            //    dateTime.Month,
+            //    dateTime.Day,
+            //    18,
+            //    0,
+            //    0,
+            //    0,
+            //    dateTime.Kind);
+        }
+
+        public static DateTime ThreePerDay(this DateTime dateTime)
+        {
+            if (dateTime.Hour >= 12 && dateTime.Hour < 15 && dateTime.Second >= 0)
             {
-                //if(day == DateTime.DaysInMonth(year, month))
-                //{
-                //    day = 1;
-
-                //    month +=1;
-                //    if(year == 12)
-                //    {
-                //        year +=1;
-                //        month = 1;
-
-                //    }
-
-                //}
-                //else
-                //{
-                //    day++;
-                //}
-
-                dateTime = dateTime.AddDays(1);
+                return new DateTime(
+                dateTime.Year,
+                dateTime.Month,
+                dateTime.Day,
+                15,
+                0,
+                0,
+                0,
+                dateTime.Kind);
             }
+            else if (dateTime.Hour >= 15 && dateTime.Hour <= 18 && dateTime.Second >= 0)
+            {
 
-            return new DateTime(
+                return new DateTime(
                 dateTime.Year,
                 dateTime.Month,
                 dateTime.Day,
@@ -178,6 +190,22 @@ namespace NtoboaFund.Helpers
                 0,
                 0,
                 dateTime.Kind);
+            }
+            else if (dateTime.Hour >= 18 && dateTime.Second >= 0)
+            {
+                dateTime = dateTime.AddDays(1);
+            }
+
+            return new DateTime(
+            dateTime.Year,
+            dateTime.Month,
+            dateTime.Day,
+            12,
+            0,
+            0,
+            0,
+            dateTime.Kind);
+
         }
 
 

@@ -29,31 +29,31 @@ namespace NtoboaFund.Controllers
         [HttpGet]
         public IEnumerable<LuckyMe> GetLuckyMes()
         {
-            return dbContext.LuckyMes;
+            return dbContext.LuckyMes.Where(i=>i.deleted == false);
         }
 
         [HttpGet("bytype/{type}")]
         public IEnumerable<LuckyMe> GetLuckyMesByType(string type)
         {
             if (type.ToLower() == "all")
-                return dbContext.LuckyMes;
+                return dbContext.LuckyMes.Where(i=>i.deleted == false);
             else if (type.ToLower() == "2")
-                return dbContext.LuckyMes.Where(i => i.User.UserType.ToString() == type.ToLower());
+                return dbContext.LuckyMes.Where(i=>i.deleted == false).Where(i => i.User.UserType.ToString() == type.ToLower());
             else
-                return dbContext.LuckyMes.Where(i => i.User.UserType != 2);
+                return dbContext.LuckyMes.Where(i=>i.deleted == false).Where(i => i.User.UserType != 2);
         }
 
 
         [HttpGet("withusers")]
         public async Task<IEnumerable<LuckyMe>> GetLuckyMesWithUsers()
         {
-            return await dbContext.LuckyMes.Include("User").ToListAsync();
+            return await dbContext.LuckyMes.Where(i=>i.deleted == false).Include("User").ToListAsync();
         }
 
         [HttpGet("foruser/{userId}")]
         public IEnumerable<LuckyMe> GetLuckyMes([FromRoute]string userId)
         {
-            return dbContext.LuckyMes.Where(l => l.UserId == userId);
+            return dbContext.LuckyMes.Where(i=>i.deleted == false).Where(l => l.UserId == userId);
         }
 
         [HttpGet("bystatus/{status}")]
@@ -61,14 +61,14 @@ namespace NtoboaFund.Controllers
         {
             if (status.ToLower() == "all")
                 return GetLuckyMes();
-            return dbContext.LuckyMes.Where(i => i.Status.ToLower() == status);
+            return dbContext.LuckyMes.Where(i=>i.deleted == false).Where(i => i.Status.ToLower() == status);
         }
 
         [AllowAnonymous]
         [HttpGet("winners")]
         public IEnumerable<LuckyMe> Winners()
         {
-            return dbContext.LuckyMes.Where(l => l.Status == "won").Include("User");
+            return dbContext.LuckyMes.Where(i=>i.deleted == false).Where(l => l.Status == "won").Include("User");
         }
 
         // GET: api/LuckyMes/5
@@ -172,12 +172,12 @@ namespace NtoboaFund.Controllers
         [HttpGet("unpaidwinnerscount")]
         public async Task<int> GetUnpaidWinnersCount()
         {
-            return await dbContext.LuckyMes.Where(i => i.Status.ToLower() == "won" && i.User.UserType == 0).CountAsync();
+            return await dbContext.LuckyMes.Where(i=>i.deleted == false).Where(i => i.Status.ToLower() == "won" && i.User.UserType == 0).CountAsync();
         }
 
         private bool LuckyMeExists(int id)
         {
-            return dbContext.LuckyMes.Any(e => e.Id == id);
+            return dbContext.LuckyMes.Where(i=>i.deleted == false).Any(e => e.Id == id);
         }
     }
 }

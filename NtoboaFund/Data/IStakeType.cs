@@ -1,19 +1,13 @@
-﻿using NtoboaFund.Data.Models;
+﻿using NtoboaFund.Data.Interfaces;
+using NtoboaFund.Data.Models;
 
 namespace NtoboaFund.Data
 {
-    public interface IStakeType
+    public interface IStakeType : ITransactionItem
     {
-        int Id { get; set; }
-
-        decimal Amount { get; set; }
-
-        string Date { get; set; }
-
         string Period { get; set; }
 
         string Status { get; set; }
-
 
         decimal AmountToWin { get; set; }
 
@@ -21,11 +15,6 @@ namespace NtoboaFund.Data
 
         int? TransferId { get; set; }
 
-        string TxRef { get; set; }
-
-        string UserId { get; set; }
-
-        ApplicationUser User { get; set; }
-
+        bool deleted { get; set; }
     }
 }

@@ -15,11 +15,13 @@ namespace NtoboaFund.SignalR
     public class StakersHub : Hub
     {
         private static int _userCount = 0;
-        double WinnersCountPercentage = 0.5;
+        double WinnersCountPercentage = 0.2;
         public StakersHub(NtoboaFundDbContext _dbContext, DummyService dummyService)
         {
             dbContext = _dbContext;
             DummyService = dummyService;
+            WinnersCountPercentage = Constants.WinnersCountPercentage;
+
         }
 
         public NtoboaFundDbContext dbContext { get; }
@@ -29,27 +31,27 @@ namespace NtoboaFund.SignalR
 
         IQueryable<LuckyMe> DailyLuckymeParticipants()
         {
-            return dbContext.LuckyMes.Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins") && i.Period.ToLower() == "daily").Include("User");
+            return dbContext.LuckyMes.Include("User").Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins") && i.Period.ToLower() == "daily");
         }
 
         IQueryable<LuckyMe> WeeklyLuckymeParticipants()
         {
-            return dbContext.LuckyMes.Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins") && i.Period.ToLower() == "weekly").Include("User");
+            return dbContext.LuckyMes.Include("User").Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins") && i.Period.ToLower() == "weekly");
         }
 
         IQueryable<LuckyMe> MonthlyLuckymeParticipants()
         {
-            return dbContext.LuckyMes.Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins") && i.Period.ToLower() == "monthly").Include("User");
+            return dbContext.LuckyMes.Include("User").Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins") && i.Period.ToLower() == "monthly");
         }
 
         IQueryable<Business> BusinessParticipants()
         {
-            return dbContext.Businesses.Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins")).Include("User");
+            return dbContext.Businesses.Include("User").Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins"));
         }
 
         IQueryable<Scholarship> ScholarshipParticipants()
         {
-            return dbContext.Scholarships.Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins")).Include("User");
+            return dbContext.Scholarships.Include("User").Where(i => (i.Status.ToLower() == "paid" || i.Status.ToLower() == "wins"));
         }
 
         #endregion
@@ -111,7 +113,7 @@ namespace NtoboaFund.SignalR
             var dailyLuckymeParticipants = DailyLuckymeParticipants().Select(i => new LuckyMeParticipantDTO
             {
                 Id = i.Id,
-                UserName = i.User.FirstName + " " + i.User.LastName,
+                UserName = i.User.FirstName,
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString("0.##"),
                 AmountToWin = i.AmountToWin.ToString("0.##"),
@@ -128,7 +130,7 @@ namespace NtoboaFund.SignalR
             var weeklyLuckymeParticipants = WeeklyLuckymeParticipants().Select(i => new LuckyMeParticipantDTO
             {
                 Id = i.Id,
-                UserName = i.User.FirstName + " " + i.User.LastName,
+                UserName = i.User.FirstName,
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString("0.##"),
                 AmountToWin = i.AmountToWin.ToString("0.##"),
@@ -145,7 +147,7 @@ namespace NtoboaFund.SignalR
             var monthlyLuckymeParticipants = MonthlyLuckymeParticipants().Select(i => new LuckyMeParticipantDTO
             {
                 Id = i.Id,
-                UserName = i.User.FirstName + " " + i.User.LastName,
+                UserName = i.User.FirstName ,
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString("0.##"),
                 AmountToWin = i.AmountToWin.ToString("0.##"),
@@ -163,7 +165,7 @@ namespace NtoboaFund.SignalR
             var scholarshipParticipants = ScholarshipParticipants().Select(i => new ScholarshipParticipantDTO
             {
                 Id = i.Id,
-                UserName = i.User.FirstName + " " + i.User.LastName,
+                UserName = i.User.FirstName ,
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString("0.##"),
                 AmountToWin = i.AmountToWin.ToString("0.##"),
@@ -179,7 +181,7 @@ namespace NtoboaFund.SignalR
             var businessParticipants = BusinessParticipants().Select(i => new BusinessParticipantDTO
             {
                 Id = i.Id,
-                UserName = i.User.FirstName + " " + i.User.LastName,
+                UserName = i.User.FirstName ,
                 UserId = i.UserId,
                 AmountStaked = i.Amount.ToString("0.##"),
                 AmountToWin = i.AmountToWin.ToString("0.##"),
@@ -193,7 +195,7 @@ namespace NtoboaFund.SignalR
         {
             //var scholarshipParticipants = dbContext.Scholarships.Where(i => i.Status.ToLower() == "paid").Include("User").Select(i => new ScholarshipParticipantDTO
             //{
-            //    UserName = i.User.FirstName + " " + i.User.LastName,
+            //    UserName = i.User.FirstName ,
             //    UserId = i.UserId,
             //    AmountStaked = i.Amount.ToString("0.##"),
             //    AmountToWin = i.AmountToWin.ToString("0.##")
@@ -206,7 +208,7 @@ namespace NtoboaFund.SignalR
         {
             //var businessParticipants = dbContext.Businesses.Where(i => i.Status.ToLower() == "paid").Include("User").Select(i => new BusinessParticipantDTO
             //{
-            //    UserName = i.User.FirstName + " " + i.User.LastName,
+            //    UserName = i.User.FirstName,
             //    UserId = i.UserId,
             //    AmountStaked = i.Amount.ToString("0.##"),
             //    AmountToWin = i.AmountToWin.ToString("0.##")
@@ -219,7 +221,7 @@ namespace NtoboaFund.SignalR
         {
             //var dailyLuckymeParticipants = dbContext.LuckyMes.Where(i => i.Status.ToLower() == "paid" && i.Period.ToLower() == "daily").Include("User").Select(i => new LuckyMeParticipantDTO
             //{
-            //    UserName = i.User.FirstName + " " + i.User.LastName,
+            //    UserName = i.User.FirstName ,
             //    UserId = i.UserId,
             //    AmountStaked = i.Amount.ToString("0.##"),
             //    AmountToWin = i.AmountToWin.ToString("0.##")
@@ -232,7 +234,7 @@ namespace NtoboaFund.SignalR
         {
             //var weeklyLuckymeParticipants = dbContext.LuckyMes.Where(i => i.Status.ToLower() == "paid" && i.Period.ToLower() == "weekly").Include("User").Select(i => new LuckyMeParticipantDTO
             //{
-            //    UserName = i.User.FirstName + " " + i.User.LastName,
+            //    UserName = i.User.FirstName ,
             //    UserId = i.UserId,
             //    AmountStaked = i.Amount.ToString("0.##"),
             //    AmountToWin = i.AmountToWin.ToString("0.##")
@@ -245,7 +247,7 @@ namespace NtoboaFund.SignalR
         {
             //var monthlyLuckymeParticipants = dbContext.LuckyMes.Where(i => i.Status.ToLower() == "paid" && i.Period.ToLower() == "monthly").Include("User").Select(i => new LuckyMeParticipantDTO
             //{
-            //    UserName = i.User.FirstName + " " + i.User.LastName,
+            //    UserName = i.User.FirstName ,
             //    UserId = i.UserId,
             //    AmountStaked = i.Amount.ToString("0.##"),
             //    AmountToWin = i.AmountToWin.ToString("0.##")
@@ -286,7 +288,7 @@ namespace NtoboaFund.SignalR
                        {
                            Id = luckyme.Id,
                            UserId = luckyme.User.Id,
-                           UserName = luckyme.User.FirstName + " " + luckyme.User.LastName,
+                           UserName = luckyme.User.FirstName,
                            AmountStaked = luckyme.Amount.ToString("0.##"),
                            AmountToWin = luckyme.AmountToWin.ToString("0.##"),
                            Status = luckyme.Status
@@ -300,7 +302,7 @@ namespace NtoboaFund.SignalR
                       {
                           Id = luckyme.Id,
                           UserId = luckyme.User.Id,
-                          UserName = luckyme.User.FirstName + " " + luckyme.User.LastName,
+                          UserName = luckyme.User.FirstName,
                           AmountStaked = luckyme.Amount.ToString("0.##"),
                           AmountToWin = luckyme.AmountToWin.ToString("0.##"),
                           Status = luckyme.Status
@@ -314,7 +316,7 @@ namespace NtoboaFund.SignalR
                     {
                         Id = luckyme.Id,
                         UserId = luckyme.User.Id,
-                        UserName = luckyme.User.FirstName + " " + luckyme.User.LastName,
+                        UserName = luckyme.User.FirstName ,
                         AmountStaked = luckyme.Amount.ToString("0.##"),
                         AmountToWin = luckyme.AmountToWin.ToString("0.##"),
                         Status = luckyme.Status
@@ -329,7 +331,7 @@ namespace NtoboaFund.SignalR
                 {
                     Id = business.Id,
                     UserId = business.User.Id,
-                    UserName = business.User.FirstName + " " + business.User.LastName,
+                    UserName = business.User.FirstName ,
                     AmountStaked = business.Amount.ToString("0.##"),
                     AmountToWin = business.AmountToWin.ToString("0.##"),
                     Status = business.Status
@@ -343,7 +345,7 @@ namespace NtoboaFund.SignalR
                 {
                     Id = scholarship.Id,
                     UserId = scholarship.User.Id,
-                    UserName = scholarship.User.FirstName + " " + scholarship.User.LastName,
+                    UserName = scholarship.User.FirstName ,
                     AmountStaked = scholarship.Amount.ToString("0.##"),
                     AmountToWin = scholarship.AmountToWin.ToString("0.##"),
                     Status = scholarship.Status

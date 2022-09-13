@@ -52,15 +52,15 @@ namespace NtoboaFund.Controllers
         public async Task<IActionResult> GetPaymentByDetails([FromRoute]string itemPayedFor, [FromRoute]int itemPayedForId)
         {
             Payment oldSamePayment = null;
-            if (itemPayedFor == "lkm")
+            if (itemPayedFor == "luckyme")
             {
                 oldSamePayment = dbContext.Payments.Where(i => i.ItemPayedFor == "Luckyme" && i.ItemPayedForId == itemPayedForId).FirstOrDefault();
             }
-            else if (itemPayedFor == "bus")
+            else if (itemPayedFor == "business")
             {
                 oldSamePayment = dbContext.Payments.Where(i => i.ItemPayedFor == "Business" && i.ItemPayedForId == itemPayedForId).FirstOrDefault();
             }
-            else if (itemPayedFor == "sch")
+            else if (itemPayedFor == "scholarship")
             {
                 oldSamePayment = dbContext.Payments.Where(i => i.ItemPayedFor == "Scholarship" && i.ItemPayedForId == itemPayedForId).FirstOrDefault();
             }
@@ -134,19 +134,19 @@ namespace NtoboaFund.Controllers
         public async Task<ActionResult<string>> GetCongratulatoryMessage(string type, string txRef)
         {
             string message = "";
-            if (type == "lkm")
+            if (type == "luckyme")
             {
                 var luckyMe = dbContext.LuckyMes.Where(i => i.TxRef == txRef).FirstOrDefault();
                 message = Misc.GetDrawMessage(EntityTypes.Luckyme, luckyMe.Amount, luckyMe.Period);
 
             }
-            else if (type == "bus")
+            else if (type == "business")
             {
                 var business = dbContext.Businesses.Where(i => i.TxRef == txRef).FirstOrDefault();
                 message = Misc.GetDrawMessage(EntityTypes.Business, business.Amount, business.Period);
 
             }
-            else if (type == "sch")
+            else if (type == "scholarship")
             {
                 var scholarship = dbContext.Scholarships.Where(i => i.TxRef == txRef).FirstOrDefault();
                 message = Misc.GetDrawMessage(EntityTypes.Scholarship, scholarship.Amount, scholarship.Period);

@@ -7,10 +7,11 @@ namespace NtoboaFund.Helpers
         flutterwave,
         slydepay,
         redde,
+        theTeller
     }
     public static class Constants
     {
-        public static PaymentGateway PaymentGateway { get; set; } = PaymentGateway.redde;
+        public static PaymentGateway PaymentGateway { get; set; } = PaymentGateway.theTeller;
         public static int ScholarshipStakeOdds { get; set; } = 100;
         public static int BusinessStakeOdds { get; set; } = 10;
         public static int LuckymeStakeOdds { get; set; } = 10;
@@ -21,7 +22,7 @@ namespace NtoboaFund.Helpers
 
         public static int[] BusinessStakes { get; set; } = { 100, 500, 1000, 2000 };
 
-        public static string MasterNumber { get; set; } = "233557560016";
+        public static string MasterNumber { get; set; } = "233548632667";
 
         /// <summary>
         /// Determines how long a dummy takes before it participates in the draw again
@@ -31,10 +32,14 @@ namespace NtoboaFund.Helpers
         /// <summary>
         /// Depicts the treshold used to determine whether participants wins or not
         /// </summary>
-        public static decimal WinnerTreshold { get; set; } = Convert.ToDecimal(1.0 / 3.0);
+        public static decimal WinnerTreshold { get; set; } = Convert.ToDecimal(1.0d);
 
 
         public static decimal PointConstant { get; set; } = Convert.ToDecimal(3.0);
+
+        public static double WinnersCountPercentage { get; set; } = 0.2;
+
+        public static string BackUrl { get; set; } = "https://ntoboafundwebapi.azurewebsites.net";
     }
 
 }

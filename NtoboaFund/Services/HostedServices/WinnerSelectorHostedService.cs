@@ -28,7 +28,7 @@ namespace NtoboaFund.Services.HostedServices
     public class ScopedProcessingService : IScopedProcessingService
     {
         public readonly NtoboaFundDbContext context = null;
-        int[] quaterlyMonths = new int[] { 3, 6, 9, 12 };
+        int[] quarterlyMonths = new int[] { 3, 6, 9, 12 };
         public IHubContext<CountdownHub> CountdownHub { get; }
         public IHubContext<StakersHub> StakersHub { get; }
         public IHubContext<WinnerSelectionHub> WinnerSelectionHub { get; }
@@ -496,16 +496,27 @@ namespace NtoboaFund.Services.HostedServices
 
             //Get the stakes that are not from dummy users
             var originalStakers = eligibleLuckyMeWinners.Where(i => i.User.UserType != 2);
-            var totalOriginalAmount = originalStakers.Sum(i => i.AmountToWin);
+            var totalOriginalAmount = originalStakers.Sum(i => i.Amount);
 
 
-            var fixedWinners = eligibleLuckyMeWinners.Where(i => i.Status.ToLower() == "wins");
+            //Get all winners who are fixed to win
+            var fixedWinners = eligibleLuckyMeWinners.Where(i => i.Status.ToLower() == "wins").ToList();
+
+            //Get all winners who will go through the normal choosing process
+            var normalWinners = eligibleLuckyMeWinners.Where(i => i.Status.ToLower() == "paid").OrderBy(i=>i.AmountToWin);
+            
+            //Get the count of total expected winners
+            var winnersCounts = DataHub.GetWinnersCount(eligibleLuckyMeWinners.Count());
+
+            //Contains the Ids of winners who have won
+            List<int?> WinnerIds = new List<int?>();
 
             if (fixedWinners.Count() > 0)
-                SelectionList.AddRange(fixedWinners.Select(i => i.Id));
+                WinnerIds.AddRange(fixedWinners.Select(i => (int?)i.Id));
 
+            decimal addedAmountToWins = 0;
 
-            foreach (var item in eligibleLuckyMeWinners)
+            foreach (var item in normalWinners)
             {
                 //If any item has a status of wins.. put only that item in the list
                 //if (item.Status == "wins")
@@ -515,7 +526,7 @@ namespace NtoboaFund.Services.HostedServices
                 //    break;
                 //}
 
-                if (item.User.UserType != 2 && item.AmountToWin > ((Constants.WinnerTreshold) * totalOriginalAmount))
+                if (item.User.UserType != 2 && (item.AmountToWin + addedAmountToWins) > ((Constants.WinnerTreshold) * totalOriginalAmount))
                 {
                     continue;
                 }
@@ -524,26 +535,24 @@ namespace NtoboaFund.Services.HostedServices
                 //var flooredAmount = item.Amount / Settings.LuckyMeStakes[0];
                 //for (var i = flooredAmount; i > 0; i--)
                 //{
-                SelectionList.Add(item.Id);
-                //  }
+                addedAmountToWins += item.AmountToWin;
+                    SelectionList.Add(item.Id);
+                //}
             }
 
 
             //Choose a winner randomly
             //Get the list length
             int selectionListLength = SelectionList.Count;
-            List<int?> WinnerIds = new List<int?>();
+           
 
             //choose a random index between 0 and the list count inclusive
             if (selectionListLength > 0)
             {
-
-
-                //Get count of potential winners
-                var winnersCounts = DataHub.GetWinnersCount(eligibleLuckyMeWinners.Count());
-
                 //Iterate over the potential winner indices in the selection list
-                for (int i = 0; i < winnersCounts; i++)
+                var winnerSelectionIterations = winnersCounts - fixedWinners.Count();
+
+                for (int i = 0; i < winnerSelectionIterations; i++)
                 {
                     selectionListLength = SelectionList.Count;
                     if (selectionListLength < 1) break;
@@ -569,13 +578,14 @@ namespace NtoboaFund.Services.HostedServices
 
                     try
                     {
-                        if (user.UserType == 0)
+                        if (user.UserType != 2)
                         {
-                            MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Winner", $"Congratulations {user.FirstName} {user.LastName}, your {item.Period} Ntoboa of {item.Amount} Cedi(s) on {item.Date} has yielded an amount of {item.AmountToWin} Cedi(s) which would be paid directly into your {user.PreferedMoneyReceptionMethod} account");
 
                             MessagingService.SendSms(user.PhoneNumber, $"Congratulations {user.FirstName} {user.LastName}, your {item.Period} Luckyme Ntoboa of {item.Amount} Cedi(s) on {item.Date} has yielded an amount of {item.AmountToWin} Cedi(s) which would be paid directly into your {user.PreferedMoneyReceptionMethod} account");
 
                             MessagingService.SendSms(Constants.MasterNumber, $"{ user.FirstName} { user.LastName} has won {item.AmountToWin} Cedi(s) with {item.Period} Luckyme Ntoboa of {item.Amount} Cedi(s) with Transfer Id {item.TransferId}", "NTB Winners");
+
+                            MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Winner", $"Congratulations {user.FirstName} {user.LastName}, your {item.Period} Ntoboa of {item.Amount} Cedi(s) on {item.Date} has yielded an amount of {item.AmountToWin} Cedi(s) which would be paid directly into your {user.PreferedMoneyReceptionMethod} account");
                         }
 
                     }
@@ -588,11 +598,12 @@ namespace NtoboaFund.Services.HostedServices
 
                 item.Status = "lost";
 
-                if (user.UserType == 0)
+                if (user.UserType != 2)
                 {
-                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
 
-                    MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
+                    MessagingService.SendSms(user.PhoneNumber, $"Wow {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Contribute daily to build more points for your reward. Visit Ntoboafund.com for winners");
+
+                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Wow {user.FirstName} {user.LastName}, your LuckyMe Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Contribute daily to build more points for your reward. Visit Ntoboafund.com for winners");
 
                 }
 
@@ -618,16 +629,26 @@ namespace NtoboaFund.Services.HostedServices
 
             //Get the stakes that are not from dummy users
             var originalStakers = eligibleScholarshipWinners.Where(i => i.User.UserType != 2);
-            var totalOriginalAmount = originalStakers.Sum(i => i.AmountToWin);
+            var totalOriginalAmount = originalStakers.Sum(i => i.Amount);
 
             var fixedWinners = eligibleScholarshipWinners.Where(i => i.Status.ToLower() == "wins");
 
+            //Get all winners who will go through the normal choosing process
+            var normalWinners = eligibleScholarshipWinners.Where(i => i.Status.ToLower() == "paid").OrderBy(i => i.AmountToWin); ;
+
+            var winnersCounts = DataHub.GetWinnersCount(eligibleScholarshipWinners.Count());
+
+
+            List<int?> WinnerIds = new List<int?>();
+
+
             //Add Fixed Winners to th slectionlist
             if (fixedWinners.Count() > 0)
-                SelectionList.AddRange(fixedWinners.Select(i => i.Id));
+                WinnerIds.AddRange(fixedWinners.Select(i => (int?)i.Id));
 
+            decimal addedAmountToWins = 0;
             //proceed to add eligible original winners to the selectionlist
-            foreach (var item in eligibleScholarshipWinners)
+            foreach (var item in normalWinners)
             {
 
                 //If any item has a status of wins.. put only that item in the list
@@ -638,7 +659,11 @@ namespace NtoboaFund.Services.HostedServices
                 //    break;
                 //}
 
-                if (item.User.UserType != 2 && item.AmountToWin > ((Constants.WinnerTreshold) * totalOriginalAmount))
+               
+
+                //var totalAmountToWin = eligibleScholarshipWinners.Select(i => i.AmountToWin).Aggregate((a, b) => { return a + b; });
+
+                if (item.User.UserType != 2 && (item.AmountToWin + addedAmountToWins) > ((Constants.WinnerTreshold) * totalOriginalAmount))
                 {
                     continue;
                 }
@@ -647,6 +672,7 @@ namespace NtoboaFund.Services.HostedServices
                 //for (var i = flooredAmount; i > 0; i--)
                 //{
                 //Rund only this since all amount is the same
+                addedAmountToWins += item.AmountToWin;
                 SelectionList.Add(item.Id);
                 //}
             }
@@ -656,15 +682,15 @@ namespace NtoboaFund.Services.HostedServices
             //Get the list length
             int selectionListLength = SelectionList.Count;
             //choose a random index between 0 and the list count inclusive
-            List<int?> WinnerIds = new List<int?>();
+
             if (selectionListLength > 0)
             {
 
                 //Get count of winners
-                var winnersCounts = DataHub.GetWinnersCount(eligibleScholarshipWinners.Count());
 
+                var winnerSelectionIterations = winnersCounts - fixedWinners.Count();
                 //Iterate over the potential winner indices in the selection list
-                for (int i = 0; i < winnersCounts; i++)
+                for (int i = 0; i < winnerSelectionIterations; i++)
                 {
                     selectionListLength = SelectionList.Count;
                     if (selectionListLength < 1) break;
@@ -689,7 +715,7 @@ namespace NtoboaFund.Services.HostedServices
 
                     try
                     {
-                        if (user.UserType == 0)
+                        if (user.UserType != 2)
                         {
                             MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Winner", $"Congratulations {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has yielded an amount of {item.AmountToWin} Cedi(s) which would be paid directly into your {user.PreferedMoneyReceptionMethod} account");
 
@@ -718,11 +744,11 @@ namespace NtoboaFund.Services.HostedServices
 
                 item.Status = "lost";
 
-                if (user.UserType == 0)
+                if (user.UserType != 2)
                 {
-                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
+                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Wow {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Contribute daily to build more points for your reward. Visit Ntoboafund.com for winners");
 
-                    MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
+                    MessagingService.SendSms(user.PhoneNumber, $"Wow {user.FirstName} {user.LastName}, your Scholarship Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Contribute daily to build more points for your reward. Visit Ntoboafund.com for winners");
 
                 }
 
@@ -749,16 +775,24 @@ namespace NtoboaFund.Services.HostedServices
 
             //Get the stakes that are not from dummy users
             var originalStakers = eligibleBusinessWinners.Where(i => i.User.UserType != 2);
-            var totalOriginalAmount = originalStakers.Sum(i => i.AmountToWin);
+            var totalOriginalAmount = originalStakers.Sum(i => i.Amount);
 
             var fixedWinners = eligibleBusinessWinners.Where(i => i.Status.ToLower() == "wins");
 
+
+            var normalWinners = eligibleBusinessWinners.Where(i => i.Status.ToLower() == "paid").OrderBy(i => i.AmountToWin); ;
+
+            var winnersCounts = DataHub.GetWinnersCount(eligibleBusinessWinners.Count());
+
+
+            List<int?> WinnerIds = new List<int?>();
             //Add fixed winner to the selection list
             if (fixedWinners.Count() > 0)
-                SelectionList.AddRange(fixedWinners.Select(i => i.Id));
+                WinnerIds.AddRange(fixedWinners.Select(i => (int?)i.Id));
 
+            decimal addedAmountToWins = 0;
             //Add Eligible original winners to the selection list
-            foreach (var item in eligibleBusinessWinners)
+            foreach (var item in normalWinners)
             {
                 //If any item has a status of wins.. put only that item in the list
                 //if (item.Status == "wins")
@@ -768,7 +802,7 @@ namespace NtoboaFund.Services.HostedServices
                 //    break;
                 //}
 
-                if (item.User.UserType != 2 && item.AmountToWin > ((Constants.WinnerTreshold) * totalOriginalAmount))
+                if (item.User.UserType != 2 && (item.AmountToWin + addedAmountToWins) > ((Constants.WinnerTreshold) * totalOriginalAmount))
                 {
                     continue;
                 }
@@ -777,6 +811,7 @@ namespace NtoboaFund.Services.HostedServices
                 //for (var i = flooredAmount; i > 0; i--)
                 //{
                 //Rund only this since all amount is the same
+                addedAmountToWins += item.AmountToWin;
                 SelectionList.Add(item.Id);
                 //}
             }
@@ -785,15 +820,15 @@ namespace NtoboaFund.Services.HostedServices
             //Choose a winner randomly
             //Get the list length
             int selectionListLength = SelectionList.Count;
-            //choose a random index between 0 and the list count inclusive
-            List<int?> WinnerIds = new List<int?>();
+
             if (selectionListLength > 0)
             {
                 //Get count of winners
-                var winnersCounts = DataHub.GetWinnersCount(eligibleBusinessWinners.Count());
+
+                var winnerSelectionIterations = winnersCounts - fixedWinners.Count();
 
                 //Iterate over the potential winner indices in the selection list
-                for (int i = 0; i < winnersCounts; i++)
+                for (int i = 0; i < winnerSelectionIterations; i++)
                 {
                     selectionListLength = SelectionList.Count;
                     if (selectionListLength < 1) break;
@@ -816,7 +851,7 @@ namespace NtoboaFund.Services.HostedServices
 
                     try
                     {
-                        if (user.UserType == 0)
+                        if (user.UserType != 2)
                         {
                             MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Winner", $"Congratulations {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has yielded an amount of {item.AmountToWin} Cedi(s) which would be paid directly into your {user.PreferedMoneyReceptionMethod} account");
 
@@ -844,11 +879,11 @@ namespace NtoboaFund.Services.HostedServices
 
                 item.Status = "lost";
 
-                if (user.UserType == 0)
+                if (user.UserType != 2)
                 {
-                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Sorry {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
+                    MessagingService.SendMail($"{user.FirstName} {user.LastName}", user.Email, "Ntoboafund Yeild Failure", $"Wow {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Contribute daily to build more points for your reward. Visit Ntoboafund.com for winners");
 
-                    MessagingService.SendSms(user.PhoneNumber, $"Sorry {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Invest more to increase your chances of winning. Please Try Again");
+                    MessagingService.SendSms(user.PhoneNumber, $"Wow {user.FirstName} {user.LastName}, your Business Ntoboa of {item.Amount} Cedi(s) on {item.Date} has won you {item.Amount * Constants.PointConstant} points. Contribute daily to build more points for your reward. Visit Ntoboafund.com for winners");
 
                 }
                 context.Entry(item).State = EntityState.Modified;
@@ -904,7 +939,7 @@ namespace NtoboaFund.Services.HostedServices
             _timer1 = new Timer(daily, null, 0, 1000);
             _timer2 = new Timer(weekly, null, 0, 1000);
             _timer3 = new Timer(monthly, null, 0, 1000);
-            _timer4 = new Timer(quaterly, null, 0, 1000);
+            _timer4 = new Timer(quarterly, null, 0, 1000);
 
             return Task.CompletedTask;
         }
@@ -931,7 +966,7 @@ namespace NtoboaFund.Services.HostedServices
 
         }
 
-        private void quaterly(object state)
+        private void quarterly(object state)
         {
             using (var scope = Services.CreateScope())
             {

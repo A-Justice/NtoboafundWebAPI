@@ -20,6 +20,8 @@
     <Folder Include="BusinessLogic\" />
     <Folder Include="Middlewares\" />
     <Folder Include="wwwroot\uploads\" />
+    <Folder Include="Helpers\AutoMapper\" />
+    <Folder Include="Data\Interfaces\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,6 +42,8 @@
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="2.1.1" />
     <PackageReference Include="Microsoft.VisualStudio.Web.BrowserLink" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.1.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup><!-- <Reference Include="hubtelapi-dotnet-v1.46">
@@ -54,4 +58,9 @@
     <PackageReference Include="Twilio" Version="5.33.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="AutoMapper.Extensions.Microsoft.DependencyInjection" />
+    <None Remove="Helpers\AutoMapper\" />
+    <None Remove="Data\Interfaces\" />
+  </ItemGroup>
 </Project>

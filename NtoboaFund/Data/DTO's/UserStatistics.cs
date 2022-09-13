@@ -11,5 +11,7 @@
         public int TotalLuckymeStakes { get; set; }
 
         public int TotalBusinessStakes { get; set; }
+
+        public decimal Wallet { get; set; }
     }
 }

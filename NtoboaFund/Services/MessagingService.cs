@@ -22,31 +22,7 @@ namespace NtoboaFund.Services
 
         public async Task SendMail(string userName, string To, string MailSubject, string MailBody)
         {
-
-            //return;
-
-            if (string.IsNullOrEmpty(To))
-                return;
-
-            try
-            {
-                string From = "info@ntoboafund.com";
-                string FromPassword = "u8v@Dlh!Ew%;";
-                var client = new SendGridClient(AppSetting.SendGridSettings.ApiKey);
-                var from = new EmailAddress(From, "NtoboaFund");
-                var subject = MailSubject;
-                var to = new EmailAddress(To, userName);
-                var plainTextContent = MailBody;
-                var htmlContent = MailBody;
-                var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
-                var response = client.SendEmailAsync(msg);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("New User Registration");
-                Console.WriteLine(ex.Message);
-            }
-
+            await SendSendGridEmail(userName, To, MailSubject, MailBody);
         }
 
         public async Task SendTwilioSms()
@@ -72,7 +48,105 @@ namespace NtoboaFund.Services
             if (string.IsNullOrEmpty(phoneNumber))
                 return;
 
-            SendMNotifySms(phoneNumber, message, senderId);
+            await SendAdroitSms(phoneNumber, message, senderId);
+        }
+
+        public async Task<int> SendAdroitSms(string phoneNumber, string message, string senderId)
+        {
+            message = message.Replace("#", "%23");
+            phoneNumber = Misc.FormatGhanaianPhoneNumber(phoneNumber);
+            //string url = $"https://apps.mnotify.net/smsapi?key={AppSetting.MNotifySettings.ApiKey}&to={phoneNumber}&msg={message}&sender_id={senderId}";
+
+            string url = $"http://sms.adroit360gh.com/sms/api?action=send-sms&api_key=YWRtaW46YWRtaW4ucGFzc3dvcmQ=&to={phoneNumber}&from={senderId}&sms={message}";
+
+            var httpClient = new HttpClient();
+
+            try
+            {
+                HttpResponseMessage response = await httpClient.GetAsync(url);
+
+                //string m =  await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return 1;
+                }
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+        }
+
+   
+
+        public async Task SendSendGridEmail(string userName, string To, string MailSubject, string MailBody) {
+            if (string.IsNullOrEmpty(To))
+                return;
+
+            try
+            {
+                string From = "info@ntoboafund.com";
+                string FromPassword = "u8v@Dlh!Ew%;";
+                var client = new SendGridClient(AppSetting.SendGridSettings.ApiKey);
+                var from = new EmailAddress(From, "NtoboaFund");
+                var subject = MailSubject;
+                var to = new EmailAddress(To, userName);
+                var plainTextContent = MailBody;
+                var htmlContent = MailBody;
+                var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
+                var response = client.SendEmailAsync(msg);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("New User Registration");
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+        public async Task SendMailChimpEmail(string userName, string To, string MailSubject, string MailBody)
+        {
+            if (string.IsNullOrEmpty(To))
+                return;
+
+            try
+            {
+               
+                string url = $"https://mandrillapp.com/api/1.0/messages/send";
+
+
+                var httpClient = new HttpClient();
+
+                try
+                {
+                    HttpResponseMessage response = httpClient.PostAsJsonAsync(url,new {
+
+                            key = "",
+                            message = new
+                            {
+                                html = "",
+                                subject = "",
+                                from_email = "info@ntoboafund.com",
+                                from_name = "NTOBOAFUND",
+                                to = new Object[] { new { email = To } },
+                                async = false
+                            }
+
+                }).Result;
+
+                    string m = response.Content.ReadAsStringAsync().Result;
+                }
+                catch (Exception ex)
+                {
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("New User Registration");
+                Console.WriteLine(ex.Message);
+            }
         }
 
         public void SendMNotifySms(string phoneNumber, string message, string senderId)
